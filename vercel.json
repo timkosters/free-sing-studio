@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run build:vercel",
+  "outputDirectory": "dist-vercel",
+  "headers": [{ "source": "/(.*)", "headers": [
+    { "key": "Permissions-Policy", "value": "microphone=(self), camera=()" },
+    { "key": "X-Content-Type-Options", "value": "nosniff" }
+  ] }]
+}
