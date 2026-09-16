@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Mic,
   Square,
@@ -19,6 +19,12 @@ import {
   Code,
   X,
   Trash2,
+  Flame,
+  Pause,
+  Check,
+  Wind,
+  CalendarDays,
+  ChevronLeft,
 } from 'lucide-react';
 import {
   detectPitch,
@@ -68,6 +74,28 @@ import {
   type History,
   type SustainState,
 } from '@/lib/history';
+import {
+  ROUTINES,
+  DAILY_KEY,
+  routineById,
+  routineLength,
+  stepKey,
+  emptyDaily,
+  parseDaily,
+  serializeDaily,
+  dayKey,
+  logStep,
+  logComplete,
+  streak,
+  bestStreak,
+  totalDays,
+  totalSeconds,
+  recentDays,
+  type Daily,
+  type Routine,
+  type RoutineId,
+  type Step,
+} from '@/lib/daily';
 import { syntheticVoice, demoFreeSample } from '@/lib/demo';
 import './free-sing.css';
 
@@ -85,7 +113,16 @@ type Recording = {
   start: number;
   frames: Frame[];
 };
-type Mode = 'sing' | 'warmups' | 'quest' | 'history';
+type Mode = 'daily' | 'sing' | 'warmups' | 'quest' | 'history';
+type DailyRun = {
+  routine: Routine;
+  index: number;
+  /** Seconds left on the current step. */
+  left: number;
+  playing: boolean;
+  /** Seconds of this routine already logged, so a replay cannot double-count. */
+  logged: number;
+};
 type QuestLive = {
   run: QuestRun;
   startedAt: number;
@@ -106,12 +143,17 @@ type DemoDriver = {
   targetSince: number;
 };
 const MODES: { id: Mode; label: string; icon: typeof Music }[] = [
+  { id: 'daily', label: 'Daily practice', icon: Flame },
   { id: 'sing', label: 'Free sing', icon: Music },
   { id: 'warmups', label: 'Warm-ups', icon: ListMusic },
   { id: 'quest', label: 'Pitch Quest', icon: Target },
   { id: 'history', label: 'Range & history', icon: Ruler },
 ];
 const INTRO: Record<Mode, [string, string]> = {
+  daily: [
+    'Ten minutes. Every day.',
+    'A guided routine built from your lessons. One step at a time, on a clock.',
+  ],
   sing: [
     'Meet your voice.',
     'Sing freely. See the notes. Record a take and listen back.',
@@ -163,7 +205,14 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   const [warming, setWarming] = useState(false),
     [warmLabel, setWarmLabel] = useState('Ready'),
     [target, setTarget] = useState<number | null>(null);
-  const [mode, setMode] = useState<Mode>('sing');
+  const [mode, setMode] = useState<Mode>('daily');
+  const [daily, setDaily] = useState<Daily>(emptyDaily),
+    [routineId, setRoutineId] = useState<RoutineId>('quick'),
+    [run, setRun] = useState<DailyRun | null>(null),
+    [dayDone, setDayDone] = useState(false);
+  const dailyRef = useRef<Daily>(emptyDaily()),
+    runRef = useRef<DailyRun | null>(null),
+    dailyPanel = useRef<HTMLElement | null>(null);
   const [demo, setDemo] = useState(false),
     [demoRunning, setDemoRunning] = useState(false);
   const [questLow, setQuestLow] = useState(55),
@@ -575,6 +624,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     warmGeneration.current++;
     if (warm.current) stopWarmup();
     if (quest.current) endQuest();
+    if (runRef.current) stopRoutine();
     setMode(next);
   }
   async function startRecording() {
@@ -860,6 +910,100 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     resetSessionRange();
     sessionCounted.current = false;
   }
+  // Written synchronously, like history, so closing the tab never loses a step.
+  function updateDaily(change: (d: Daily) => Daily) {
+    const next = change(dailyRef.current);
+    if (next === dailyRef.current) return;
+    dailyRef.current = next;
+    setDaily(next);
+    try {
+      localStorage.setItem(DAILY_KEY, serializeDaily(next));
+    } catch {}
+  }
+  /** A step needs the microphone only when it shows you your own pitch. */
+  const needsMic = (step: Step | null) =>
+    step !== null && (step.engine === 'mic' || step.engine === 'hold');
+  function setRunState(next: DailyRun | null) {
+    runRef.current = next;
+    setRun(next);
+  }
+  /** Ending early still banks the part of the current step that was practised. */
+  function stopRoutine() {
+    const r = runRef.current;
+    if (r) {
+      const spent = Math.max(0, r.routine.steps[r.index].seconds - r.left);
+      if (spent > 0) updateDaily((d) => logStep(d, spent, dayKey(), Date.now()));
+    }
+    setRunState(null);
+    setDayDone(false);
+    liveTarget.current = null;
+    setTarget(null);
+  }
+  function startRoutine(id: RoutineId) {
+    const routine = routineById(id);
+    setRoutineId(id);
+    setDayDone(false);
+    const first = routine.steps[0];
+    setRunState({
+      routine,
+      index: 0,
+      left: first.seconds,
+      playing: true,
+      logged: 0,
+    });
+    if (needsMic(first)) void startListening();
+    requestAnimationFrame(() =>
+      dailyPanel.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+    );
+  }
+  /**
+   * Move to another step. Whatever time was spent on the step we are leaving is
+   * banked first, so skipping forward never credits time that was not practised.
+   */
+  function goToStep(target: number, credit: boolean) {
+    const r = runRef.current;
+    if (!r) return;
+    const step = r.routine.steps[r.index];
+    const spent = credit ? Math.max(0, step.seconds - r.left) : 0;
+    if (spent > 0) updateDaily((d) => logStep(d, spent, dayKey(), Date.now()));
+    if (target >= r.routine.steps.length) {
+      updateDaily((d) => logComplete(d, dayKey(), Date.now()));
+      setRunState(null);
+      setDayDone(true);
+      stopListening();
+      return;
+    }
+    const index = Math.max(0, target);
+    const next = r.routine.steps[index];
+    setRunState({ ...r, index, left: next.seconds, logged: r.logged + spent });
+    if (needsMic(next)) void startListening();
+  }
+  // The tick below is created once, so it reaches goToStep through a ref that
+  // every render refreshes rather than closing over the first one.
+  const advance = useRef(goToStep);
+  useEffect(() => {
+    advance.current = goToStep;
+  });
+  // One tick a second drives the step clock and rolls into the next step.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const r = runRef.current;
+      if (!r || !r.playing) return;
+      if (r.left > 1) {
+        setRunState({ ...r, left: r.left - 1 });
+        return;
+      }
+      advance.current(r.index + 1, true);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    try {
+      const stored = parseDaily(localStorage.getItem(DAILY_KEY));
+      dailyRef.current = stored;
+      requestAnimationFrame(() => setDaily(stored));
+    } catch {}
+  }, []);
   useEffect(() => {
     const timer = setInterval(() => {
       const w = warm.current,
@@ -1091,7 +1235,23 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   const savedLow = history.low,
     savedHigh = history.high;
   const [introTitle, introText] = INTRO[mode];
-  const showConsole = mode !== 'history';
+  const runStep = run ? run.routine.steps[run.index] : null;
+  const todayKey = dayKey();
+  const dayStreak = streak(daily, todayKey);
+  const today = daily.days[todayKey] ?? null;
+  const strip = recentDays(daily, 28, todayKey);
+  const stepProgress = runStep
+    ? (runStep.seconds - run!.left) / runStep.seconds
+    : 0;
+  const breath = runStep?.breath ?? [3, 2, 9];
+  const breathCycle = breath[0] + breath[1] + breath[2];
+  const breathIn = ((breath[0] / breathCycle) * 100).toFixed(1);
+  const breathHold = (((breath[0] + breath[1]) / breathCycle) * 100).toFixed(1);
+  // Daily only takes over the console while a step is actually showing your pitch.
+  const showConsole =
+    mode === 'daily'
+      ? runStep !== null && needsMic(runStep)
+      : mode !== 'history';
   const noteLabel = replay
     ? 'PLAYBACK NOTE'
     : demo
@@ -1224,6 +1384,228 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
         <h1>{introTitle}</h1>
         <p>{introText}</p>
       </div>
+      {mode === 'daily' && (
+        <section
+          ref={dailyPanel}
+          className="fs-daily"
+          aria-label="Daily practice"
+        >
+          {run && runStep ? (
+            <>
+              <div className="fs-step-top">
+                <span className="fs-step-count">
+                  Step {run.index + 1} of {run.routine.steps.length} ·{' '}
+                  {run.routine.label}
+                </span>
+                <button type="button" onClick={stopRoutine}>
+                  <X size={15} /> End session
+                </button>
+              </div>
+              <div className="fs-step-bar" aria-hidden="true">
+                {run.routine.steps.map((step, i) => (
+                  <i
+                    key={stepKey(step, i)}
+                    className={
+                      i < run.index
+                        ? 'fs-bar-done'
+                        : i === run.index
+                          ? 'fs-bar-now'
+                          : ''
+                    }
+                    style={
+                      i === run.index
+                        ? ({
+                            '--fill': `${stepProgress * 100}%`,
+                          } as CSSProperties)
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+              <div className="fs-step-main">
+                <div className="fs-step-copy">
+                  <h2>{runStep.title}</h2>
+                  <p className="fs-step-cue">{runStep.cue}</p>
+                  <ul>
+                    {runStep.detail.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                  <p className="fs-step-source">{runStep.source}</p>
+                </div>
+                <div className="fs-step-side">
+                  {runStep.engine === 'breath' && runStep.breath ? (
+                    <div
+                      className={
+                        run.playing ? 'fs-breath fs-breath-on' : 'fs-breath'
+                      }
+                      style={
+                        { '--cycle': `${breathCycle}s` } as CSSProperties
+                      }
+                    >
+                      {/* Keyframe stops follow the step's own in/hold/out split,
+                          so changing the tuple cannot silently desync the ring. */}
+                      <style>{`@keyframes fs-breathe-live{0%{transform:scale(.45)}${breathIn}%{transform:scale(1)}${breathHold}%{transform:scale(1)}100%{transform:scale(.45)}}`}</style>
+                      <i aria-hidden="true" />
+                      <span>
+                        <Wind size={16} aria-hidden="true" /> in{' '}
+                        {runStep.breath[0]} · hold {runStep.breath[1]} · out{' '}
+                        {runStep.breath[2]}
+                      </span>
+                      <small>{formatTime(run.left)} left</small>
+                    </div>
+                  ) : (
+                    <div className="fs-step-clock" aria-live="off">
+                      <strong>{formatTime(run.left)}</strong>
+                      <span>left on this step</span>
+                    </div>
+                  )}
+                  {runStep.engine === 'hold' && (
+                    <p className="fs-step-hold">
+                      Sit around {noteName(runStep.hold ?? 60)}. The trail below
+                      should be a flat line.
+                    </p>
+                  )}
+                  <div className="fs-step-controls">
+                    <button
+                      type="button"
+                      onClick={() => goToStep(run.index - 1, false)}
+                      disabled={run.index === 0}
+                    >
+                      <ChevronLeft size={16} /> Back
+                    </button>
+                    <button
+                      type="button"
+                      className="fs-step-play"
+                      onClick={() =>
+                        setRunState({ ...run, playing: !run.playing })
+                      }
+                    >
+                      {run.playing ? <Pause size={16} /> : <Play size={16} />}
+                      {run.playing ? 'Pause' : 'Resume'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => goToStep(run.index + 1, true)}
+                    >
+                      Next <SkipForward size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {dayDone && (
+                <div className="fs-day-done" aria-live="polite">
+                  <Check size={20} aria-hidden="true" />
+                  <p>
+                    <strong>Done for today.</strong> That is{' '}
+                    {dayStreak === 1 ? 'day one' : `${dayStreak} days in a row`}.
+                    Come back tomorrow.
+                  </p>
+                </div>
+              )}
+              <div className="fs-streak">
+                <div className="fs-streak-now">
+                  <Flame size={22} aria-hidden="true" />
+                  <strong>{dayStreak}</strong>
+                  <span>
+                    day{dayStreak === 1 ? '' : 's'} in a row
+                    {today ? '' : dayStreak ? ' · today still open' : ''}
+                  </span>
+                </div>
+                <dl className="fs-streak-stats">
+                  <div>
+                    <dt>Best run</dt>
+                    <dd>{bestStreak(daily)}</dd>
+                  </div>
+                  <div>
+                    <dt>Days practised</dt>
+                    <dd>{totalDays(daily)}</dd>
+                  </div>
+                  <div>
+                    <dt>Total time</dt>
+                    <dd>{formatMinutes(totalSeconds(daily))}</dd>
+                  </div>
+                </dl>
+              </div>
+              <div className="fs-cal" aria-label="Last 28 days">
+                <span className="fs-cal-head">
+                  <CalendarDays size={14} aria-hidden="true" /> Last 28 days
+                </span>
+                <div className="fs-cal-grid">
+                  {strip.map(({ key, day }) => (
+                    <i
+                      key={key}
+                      title={`${key}${day ? ` · ${formatMinutes(day.seconds)}${day.completed ? ' · finished' : ''}` : ' · nothing yet'}`}
+                      className={
+                        day?.completed
+                          ? 'fs-cal-full'
+                          : day && day.seconds > 0
+                            ? 'fs-cal-part'
+                            : ''
+                      }
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="fs-routines">
+                {ROUTINES.map((routine) => (
+                  <article
+                    key={routine.id}
+                    className={
+                      routine.id === routineId
+                        ? 'fs-routine fs-routine-on'
+                        : 'fs-routine'
+                    }
+                  >
+                    <button
+                      type="button"
+                      className="fs-routine-pick"
+                      aria-pressed={routine.id === routineId}
+                      onClick={() => setRoutineId(routine.id)}
+                    >
+                      <h3>
+                        {routine.label}
+                        <em>{routineLength(routine)}</em>
+                      </h3>
+                      <p>{routine.blurb}</p>
+                    </button>
+                  </article>
+                ))}
+              </div>
+              <div className="fs-plan">
+                <ol>
+                  {routineById(routineId).steps.map((step, i) => (
+                    <li key={stepKey(step, i)}>
+                      <span className="fs-plan-title">{step.title}</span>
+                      <span className="fs-plan-cue">{step.cue}</span>
+                      <span className="fs-plan-time">
+                        {Math.round(step.seconds / 60) || 1} min
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+                <button
+                  type="button"
+                  className="fs-start-daily"
+                  onClick={() => startRoutine(routineId)}
+                >
+                  <Play size={18} />
+                  {today?.completed ? 'Practise again' : 'Start today'} ·{' '}
+                  {routineLength(routineById(routineId))}
+                </button>
+                <p className="fs-plan-note">
+                  Built from your lessons with Dariia, Jones and Doris. The
+                  microphone only turns on for the steps that show your pitch.
+                  Nothing leaves this device.
+                </p>
+              </div>
+            </>
+          )}
+        </section>
+      )}
       {showConsole && (
         <section className="fs-console" aria-label="Singing controls">
           <div className="fs-stats">
