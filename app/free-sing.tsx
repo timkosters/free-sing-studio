@@ -25,6 +25,9 @@ import {
   Wind,
   CalendarDays,
   ChevronLeft,
+  CloudCheck,
+  LogOut,
+  Loader,
 } from 'lucide-react';
 import {
   detectPitch,
@@ -96,6 +99,21 @@ import {
   type RoutineId,
   type Step,
 } from '@/lib/daily';
+import {
+  rowsToDaily,
+  dailyToRows,
+  mergeDaily,
+  needsPush,
+  isOtpCode,
+  looksLikeEmail,
+  authMessage,
+} from '@/lib/sync';
+import {
+  supabase,
+  syncConfigured,
+  hasStoredSession,
+  PRACTICE_TABLE,
+} from '@/lib/supabase';
 import { syntheticVoice, demoFreeSample } from '@/lib/demo';
 import './free-sing.css';
 
@@ -213,6 +231,14 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   const dailyRef = useRef<Daily>(emptyDaily()),
     runRef = useRef<DailyRun | null>(null),
     dailyPanel = useRef<HTMLElement | null>(null);
+  const [account, setAccount] = useState<string | null>(null),
+    [syncOpen, setSyncOpen] = useState(false),
+    [syncStage, setSyncStage] = useState<'email' | 'code'>('email'),
+    [syncEmail, setSyncEmail] = useState(''),
+    [syncCode, setSyncCode] = useState(''),
+    [syncBusy, setSyncBusy] = useState(false),
+    [syncNote, setSyncNote] = useState(''),
+    [syncedAt, setSyncedAt] = useState<number | null>(null);
   const [demo, setDemo] = useState(false),
     [demoRunning, setDemoRunning] = useState(false);
   const [questLow, setQuestLow] = useState(55),
@@ -978,6 +1004,133 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setRunState({ ...r, index, left: next.seconds, logged: r.logged + spent });
     if (needsMic(next)) void startListening();
   }
+  /**
+   * Pull the server's calendar, merge it into the local one, then write the
+   * merge back to both. The merge takes the larger value per day, so running
+   * this at any moment, in any order, can only ever add practice.
+   */
+  async function syncPractice() {
+    const client = await supabase();
+    if (!client) return;
+    const { data: userData } = await client.auth.getUser();
+    const user = userData.user;
+    if (!user) return;
+    const { data, error } = await client
+      .from(PRACTICE_TABLE)
+      .select('day,seconds,steps,completed');
+    if (error) {
+      setSyncNote(authMessage(error));
+      return;
+    }
+    const remote = rowsToDaily(data);
+    const merged = mergeDaily(dailyRef.current, remote);
+    updateDaily(() => merged);
+    if (needsPush(remote, merged)) {
+      const rows = dailyToRows(merged).map((row) => ({
+        ...row,
+        user_id: user.id,
+      }));
+      if (rows.length) {
+        const { error: writeError } = await client
+          .from(PRACTICE_TABLE)
+          .upsert(rows, { onConflict: 'user_id,day' });
+        if (writeError) {
+          setSyncNote(authMessage(writeError));
+          return;
+        }
+      }
+    }
+    if (!mounted.current) return;
+    // oxlint-disable-next-line react/react-compiler -- Event or lifecycle timestamp, never sampled during render.
+    setSyncedAt(Date.now());
+  }
+  async function sendSyncCode() {
+    const client = await supabase();
+    if (!client) return;
+    const email = syncEmail.trim();
+    if (!looksLikeEmail(email)) {
+      setSyncNote('That does not look like an email address.');
+      return;
+    }
+    setSyncBusy(true);
+    setSyncNote('');
+    const { error } = await client.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (!mounted.current) return;
+    setSyncBusy(false);
+    if (error) {
+      setSyncNote(authMessage(error));
+      return;
+    }
+    setSyncStage('code');
+    setSyncNote(`Six-digit code sent to ${email}.`);
+  }
+  async function verifySyncCode() {
+    const client = await supabase();
+    if (!client) return;
+    if (!isOtpCode(syncCode)) {
+      setSyncNote('Enter the six digits from the email.');
+      return;
+    }
+    setSyncBusy(true);
+    setSyncNote('');
+    const { data, error } = await client.auth.verifyOtp({
+      email: syncEmail.trim(),
+      token: syncCode.trim(),
+      type: 'email',
+    });
+    if (!mounted.current) return;
+    setSyncBusy(false);
+    if (error) {
+      setSyncNote(authMessage(error));
+      return;
+    }
+    setAccount(data.user?.email ?? syncEmail.trim());
+    setSyncCode('');
+    setSyncStage('email');
+    setSyncNote('Merging your practice\u2026');
+    await syncPractice();
+    if (!mounted.current) return;
+    setSyncNote('');
+  }
+  /** Signing out leaves every day of practice in this browser untouched. */
+  async function signOutSync() {
+    const client = await supabase();
+    if (!client) return;
+    await client.auth.signOut();
+    if (!mounted.current) return;
+    setAccount(null);
+    setSyncedAt(null);
+    setSyncStage('email');
+    setSyncCode('');
+    setSyncNote('');
+  }
+  const syncLatest = useRef(syncPractice);
+  useEffect(() => {
+    syncLatest.current = syncPractice;
+  });
+  // Restore an existing session on load, then reconcile the two calendars.
+  // Signed-out visitors never reach the import, so they never download it.
+  useEffect(() => {
+    if (!hasStoredSession()) return;
+    void (async () => {
+      const client = await supabase();
+      if (!client || !mounted.current) return;
+      const { data } = await client.auth.getSession();
+      if (!mounted.current || !data.session) return;
+      setAccount(data.session.user.email ?? 'signed in');
+      void syncLatest.current();
+    })();
+  }, []);
+  // Practice keeps being logged while a routine runs, so pushes are debounced
+  // rather than fired per step.
+  useEffect(() => {
+    if (!account || !daily.updated) return;
+    const timer = setTimeout(() => void syncLatest.current(), 4000);
+    return () => clearTimeout(timer);
+  }, [account, daily.updated]);
   // The tick below is created once, so it reaches goToStep through a ref that
   // every render refreshes rather than closing over the first one.
   const advance = useRef(goToStep);
@@ -1306,6 +1459,21 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
               Exercises
             </button>
           )}
+          {syncConfigured && (
+            <button
+              className={syncOpen ? 'fs-sync-toggle fs-sync-on' : 'fs-sync-toggle'}
+              aria-expanded={syncOpen}
+              onClick={() => setSyncOpen((open) => !open)}
+              title={
+                account
+                  ? 'Your practice syncs to this account'
+                  : 'Optional: keep your streak across devices'
+              }
+            >
+              <CloudCheck size={16} />
+              {account ? 'Synced' : 'Sync'}
+            </button>
+          )}
           <button
             className={
               demo ? 'fs-demo-toggle fs-demo-toggle-on' : 'fs-demo-toggle'
@@ -1379,6 +1547,111 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
             <X size={16} /> Exit demo
           </button>
         </div>
+      )}
+      {syncConfigured && syncOpen && (
+        <section className="fs-sync" aria-label="Practice sync">
+          {account ? (
+            <>
+              <div className="fs-sync-who">
+                <p>
+                  <strong>Signed in as {account}.</strong> Your practice
+                  calendar merges across every device you sign in on.
+                </p>
+                <small>
+                  {syncedAt
+                    ? `Last synced at ${new Date(syncedAt).toLocaleTimeString()}.`
+                    : 'Not synced yet this session.'}
+                </small>
+              </div>
+              <div className="fs-sync-actions">
+                <button
+                  type="button"
+                  disabled={syncBusy}
+                  onClick={() => void syncPractice()}
+                >
+                  <CloudCheck size={15} /> Sync now
+                </button>
+                <button type="button" onClick={() => void signOutSync()}>
+                  <LogOut size={15} /> Sign out
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="fs-sync-who">
+                <p>
+                  <strong>Optional.</strong> Free Sing works with no account.
+                  Sign in only if you want one streak across your laptop and
+                  your phone. We email a six-digit code; there is no password.
+                </p>
+                <small>
+                  Only your practice calendar is stored: the day, how long and
+                  whether you finished. No audio, no recordings, ever.
+                </small>
+              </div>
+              {syncStage === 'email' ? (
+                <form
+                  className="fs-sync-actions"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void sendSyncCode();
+                  }}
+                >
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    aria-label="Email address"
+                    value={syncEmail}
+                    onChange={(e) => setSyncEmail(e.target.value)}
+                  />
+                  <button type="submit" disabled={syncBusy}>
+                    {syncBusy ? <Loader size={15} /> : <CloudCheck size={15} />}
+                    {syncBusy ? 'Sending' : 'Email me a code'}
+                  </button>
+                </form>
+              ) : (
+                <form
+                  className="fs-sync-actions"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void verifySyncCode();
+                  }}
+                >
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="123456"
+                    aria-label="Six-digit code"
+                    value={syncCode}
+                    onChange={(e) => setSyncCode(e.target.value)}
+                  />
+                  <button type="submit" disabled={syncBusy}>
+                    {syncBusy ? <Loader size={15} /> : <Check size={15} />}
+                    {syncBusy ? 'Checking' : 'Sign in'}
+                  </button>
+                  <button
+                    type="button"
+                    className="fs-sync-back"
+                    onClick={() => {
+                      setSyncStage('email');
+                      setSyncCode('');
+                      setSyncNote('');
+                    }}
+                  >
+                    Use a different email
+                  </button>
+                </form>
+              )}
+            </>
+          )}
+          {syncNote && (
+            <p className="fs-sync-note" aria-live="polite">
+              {syncNote}
+            </p>
+          )}
+        </section>
       )}
       <div className="fs-intro">
         <h1>{introTitle}</h1>

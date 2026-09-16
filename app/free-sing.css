@@ -1516,3 +1516,86 @@
     justify-content: center;
   }
 }
+
+/* ---------------------------------------------------------------- */
+/* Optional practice sync                                            */
+/* ---------------------------------------------------------------- */
+.sing-app .fs-sync-on {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.fs-sync {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 24px;
+  align-items: center;
+  margin: 16px 0 0;
+  padding: 18px 22px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 14px;
+}
+.fs-sync-who p {
+  margin: 0;
+  font-size: 14px;
+}
+.fs-sync-who small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.fs-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.fs-sync-actions input {
+  flex: 1 1 150px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+.fs-sync-actions input:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+.sing-app .fs-sync-actions button {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.sing-app .fs-sync-actions button[type='submit'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 600;
+}
+.sing-app .fs-sync-actions .fs-sync-back {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  text-decoration: underline;
+}
+.fs-sync-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+@media (max-width: 760px) {
+  .fs-sync {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 16px;
+  }
+}

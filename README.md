@@ -22,6 +22,22 @@ The routine content is specific rather than generic: cord closure ("goo"), the c
 
 **Try demo** switches the whole app to a synthetic voice. No microphone permission is requested, the trace turns violet, panels are labeled as synthetic, and recording is disabled. Demo results are illustrative and never enter saved practice history or the observed range map. The synthetic singer follows quest targets (with an occasional deliberate correction) and wanders a short melody in free-sing view, which makes it suitable for recording a public walkthrough.
 
+**Sync** is optional and off unless the deployment is configured for it. Signing in with an emailed six-digit code mirrors the practice calendar so one streak follows you between devices. Only the calendar is stored server-side: the day, seconds practised, steps finished and whether the routine was completed. No audio, no recordings and no range data ever leave the device. Signing out leaves everything in this browser untouched.
+
+## Optional sync setup
+
+Skip this entirely to run the app with no accounts and no backend. To enable it:
+
+1. Create a free project at <https://supabase.com>.
+2. In the SQL Editor, run `supabase/schema.sql`. It creates `practice_days` and the row-level-security policies that keep each singer to their own rows.
+3. **Edit the email template.** Under Authentication → Emails → Magic Link, make sure the body contains `{{ .Token }}`. Supabase ships a template that only sends a clickable link; this app asks for a six-digit code, so without the token the email arrives with nothing to type.
+4. Copy the Project URL and the `anon` public key from Project Settings → API.
+5. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`) locally, and as environment variables on the host. They are build-time values, so redeploy after adding them.
+
+Supabase's built-in email sender is rate limited to a handful of messages an hour, which is fine for personal use. For anything wider, set custom SMTP under Authentication → Emails.
+
+The auth client is code-split and fetched only when the sync panel is opened or a stored session already exists, so visitors who never sign in do not download it.
+
 ## Privacy and browser limitations
 
 - Audio never leaves the device. There are no uploads, accounts, analytics or third-party requests. Reference tones are synthesized locally.
@@ -45,3 +61,6 @@ Pure logic lives in `lib/` and is covered by Node tests in `tests/`:
 - `lib/history.ts` — sustained-note range tracking, history parsing/merging and time formatting.
 - `lib/demo.ts` — the deterministic synthetic voice used by demo mode.
 - `lib/daily.ts` — the practice routines, plus day keys, streaks and the local practice calendar.
+- `lib/sync.ts` — row mapping, the calendar merge rule and the auth message translations.
+
+`lib/supabase.ts` holds the lazily-imported client and is deliberately thin, so everything worth testing stays in `lib/sync.ts`.
