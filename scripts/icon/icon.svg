@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a1750"/>
+      <stop offset="1" stop-color="#7048c8"/>
+    </linearGradient>
+    <linearGradient id="trail" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c7a8ff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffffff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <g opacity="0.16" stroke="#ffffff" stroke-width="6">
+    <line x1="120" y1="300" x2="904" y2="300"/>
+    <line x1="120" y1="404" x2="904" y2="404"/>
+    <line x1="120" y1="508" x2="904" y2="508"/>
+    <line x1="120" y1="612" x2="904" y2="612"/>
+    <line x1="120" y1="716" x2="904" y2="716"/>
+  </g>
+  <path d="M120 640 C 220 640, 250 560, 330 540 S 430 620, 500 520 S 600 380, 690 430 S 800 520, 904 300"
+        fill="none" stroke="url(#trail)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M120 640 C 220 640, 250 560, 330 540 S 430 620, 500 520 S 600 380, 690 430 S 800 520, 904 300"
+        fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="120" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="904" cy="300" r="46" fill="#ffffff"/>
+  <circle cx="904" cy="300" r="82" fill="#ffffff" fill-opacity="0.25"/>
+</svg>

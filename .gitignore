@@ -1,0 +1,17 @@
+# Xcode
+*.xcodeproj/
+!*.xcodeproj/project.pbxproj
+xcuserdata/
+DerivedData/
+build/
+*.xcuserstate
+.build/
+.swiftpm/
+Packages/*/.build/
+# macOS
+.DS_Store
+# Secrets
+*.p8
+*.p12
+*.mobileprovision
+fastlane/report.xml
