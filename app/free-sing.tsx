@@ -131,6 +131,7 @@ import {
   personalizeSteps,
   type Profile,
 } from '@/lib/profile';
+import { trailPaths } from '@/lib/trail';
 import { syntheticVoice, demoFreeSample } from '@/lib/demo';
 import './free-sing.css';
 
@@ -1498,20 +1499,19 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   useEffect(() => {
     if (roll.current) roll.current.scrollTop = (96 - 60) * 28 - 200;
   }, [mode]);
-  function path(kind: 'midi' | 'target') {
-    let pen = false;
-    return shownFrames
-      .map((f) => {
-        const m = f[kind];
-        if (m === null || m < 23.5 || m > 96.5) {
-          pen = false;
-          return '';
-        }
-        const command = `${pen ? 'L' : 'M'}${(((f.t - now + 10) / 10) * 810).toFixed(1)},${((96 - m + 0.5) * 28).toFixed(1)}`;
-        pen = true;
-        return command;
-      })
-      .join(' ');
+  /**
+   * The drawn trail. Brief dropouts are bridged and the jitter is
+   * median-smoothed, so a phrase reads as one line rather than as scattered
+   * fragments; only real silence splits it.
+   */
+  function paths(kind: 'midi' | 'target') {
+    return trailPaths(
+      shownFrames.map((f) => ({ t: f.t, midi: f[kind] })),
+      23.5,
+      96.5,
+      (t) => ((t - now + 10) / 10) * 810,
+      (midi) => (96 - midi + 0.5) * 28,
+    );
   }
   const [questRangeLow, questRangeHigh] = normalizeQuestRange(
     questLow,
@@ -2770,8 +2770,12 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                     : 'Ten-second pitch trail'
                 }
               >
-                <path d={path('target')} className="fs-reference-path" />
-                <path d={path('midi')} className="fs-voice-path" />
+                {paths('target').map((d) => (
+                  <path key={d} d={d} className="fs-reference-path" />
+                ))}
+                {paths('midi').map((d) => (
+                  <path key={d} d={d} className="fs-voice-path" />
+                ))}
               </svg>
             </div>
           </div>

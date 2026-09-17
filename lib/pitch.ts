@@ -23,6 +23,16 @@ export function noteName(midi: number) {
 export const MIN_HZ = 54;
 /** Highest fundamental treated as a voice, comfortably above any sung note. */
 export const MAX_HZ = 2200;
+/**
+ * How periodic a window has to be before it counts as a note.
+ *
+ * Textbook YIN uses 0.10-0.15, which assumes a clean signal. A breathy voice is
+ * not clean: the aperiodic part of the sound pushes the normalised difference
+ * well above that even when the pitch is perfectly clear to a listener, and the
+ * breathiest notes are usually the lowest ones. Measured against noise, hiss,
+ * breath, mains hum and rumble, 0.30 still produced no false positives.
+ */
+const THRESHOLD = 0.3;
 
 /**
  * Flatten a slow amplitude envelope while leaving the pitch periodicity alone.
@@ -36,10 +46,12 @@ export const MAX_HZ = 2200;
  * shallower and slower, passes through untouched.
  */
 function flattenEnvelope(buffer: Float32Array, sampleRate: number) {
-  // About 2ms: long enough to measure loudness, far shorter than the envelope
-  // changes being removed, and short enough to track a fast flutter on a low
-  // note, which is the case that fails first.
-  const window = Math.max(8, Math.floor(sampleRate / 500));
+  // About 6ms. This has to sit in a narrow band: long enough to cover most of
+  // one pitch period at the bottom of the range (a 100Hz note is 10ms), or the
+  // division reshapes the waveform itself and a breathy low note stops being
+  // findable; short enough to still track a 20-35Hz flutter. Measured at
+  // sampleRate/500 it destroyed low notes; at sampleRate/160 both survive.
+  const window = Math.max(8, Math.floor(sampleRate / 160));
   const magnitude = new Float32Array(buffer.length);
   let sum = 0;
   for (let i = 0; i < buffer.length; i++) {
@@ -106,11 +118,11 @@ export function detectPitch(
   }
   let lag = minLag;
   for (; lag < maxLag; lag++)
-    if (diff[lag] < 0.15) {
+    if (diff[lag] < THRESHOLD) {
       while (lag + 1 < maxLag && diff[lag + 1] < diff[lag]) lag++;
       break;
     }
-  if (lag >= maxLag || diff[lag] > 0.15) return null;
+  if (lag >= maxLag || diff[lag] > THRESHOLD) return null;
   const a = diff[lag - 1],
     b = diff[lag],
     c = diff[lag + 1],
