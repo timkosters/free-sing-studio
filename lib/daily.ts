@@ -170,13 +170,13 @@ const BRIDGE: Step = {
 };
 
 const HARD_LINE: Step = {
-  id: 'blackbird',
+  id: 'hard-line',
   title: 'Your hardest line',
-  cue: '"Into the light of a dark black night." On loop.',
+  cue: 'One phrase. The one that keeps going wrong. On loop.',
   detail: [
-    'This is the passage that sits right on your break. That is why it is here.',
-    'Head voice on the climb, stay relaxed, keep it quiet.',
-    'Head neutral. Do not crane upward. Move side to side instead.',
+    'Pick the bar that defeats you, usually the one sitting on your break.',
+    'Take it quieter and slower than feels right. Louder never fixes a break.',
+    'Head neutral. Do not crane upward for the high note; move side to side.',
     'Lead the sound forward. Do not land heavily on each syllable.',
   ],
   source: 'One hard bar, repeated, beats another run at the whole song',
