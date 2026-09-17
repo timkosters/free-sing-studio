@@ -17,6 +17,19 @@ The command-line route (`mas install`) needs your admin password, which I cannot
 Note: the Command Line Tools on this Mac were in a broken state (Swift compiler did not match its SDK).
 Installing full Xcode replaces them.
 
+## 0b. Backend: one command from you
+
+The iOS app signs in against the same Supabase project as the web app. Two settings on that project
+(the `singwell://auth-callback` redirect and the Apple provider) are in `supabase/config.toml` but the
+auto-mode classifier does not let me push shared-resource changes. From the repo root:
+
+```bash
+cd ~/CommandCenter/sites/free-sing-studio && supabase config push
+```
+
+Type `y` when it shows the diff. After that, an emailed sign-in link opens the iOS app instead of the
+website, and Sign in with Apple inside the app works.
+
 ## 1. Apple Developer Program ($99/year)
 
 Needed to run on your own iPhone for more than a week, use TestFlight, sell subscriptions, and publish.
@@ -37,8 +50,11 @@ Needed to run on your own iPhone for more than a week, use TestFlight, sell subs
 
 ## 2. Xcode sign-in (one time)
 
-1. **YOU** Open Xcode → Settings → Accounts → + → Apple ID → sign in with the developer Apple ID.
-2. That is all. Xcode creates certificates and provisioning profiles by itself when I build.
+1. **YOU** Open Xcode → Settings (⌘,) → Accounts → **+** → Apple ID → sign in with timour.kosters@gmail.com.
+2. Once it appears, click your name: the **Team ID** is listed there too. Tell me the Team ID, or just say
+   "signed in" and I will read it from Xcode.
+3. Xcode then creates certificates and provisioning profiles by itself when I build for your iPhone
+   and when I archive for TestFlight.
 
 ## 3. Your iPhone for testing
 

@@ -1,6 +1,13 @@
 # Singwell (iOS)
 
-Native SwiftUI port of the Free Sing web app, rebuilt as a paid-tier iPhone app.
+Native SwiftUI companion to the Singwell web app in the parent folder. Same Supabase backend, same
+accounts (Sign in with Apple or an emailed link), same practice calendar and voice profile, same
+design system (Fraunces + Sora, teal palette). Core logic is ported one for one from `../lib`.
+
+**Keeping the two apps in sync:** `Packages/SingwellCore` mirrors `../lib` (pitch, warmup, quest,
+history, daily, sync, profile). When `lib/*.ts` changes, port the change and its test here. The
+Supabase schema lives in `../supabase/migrations`; the auth config (redirect URLs, Apple provider)
+in `../supabase/config.toml`, applied with `supabase config push` from the repo root.
 
 **What it does:** live pitch on a chromatic piano roll, reference piano tones, recordings with the
 pitch trail attached, a ten-minute guided daily routine with streaks, call-and-response warm-ups,
