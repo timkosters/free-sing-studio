@@ -4,30 +4,18 @@ Written for Timour (non-engineer). Do the steps in order. Anything marked **YOU*
 password or payment card, so it has to be you at the keyboard. Anything marked **R2** I can do once the
 step before it is done.
 
-## 0. The Mac needs Xcode (blocker right now)
+## 0. The Mac needs Xcode (one click from you)
 
-Your MacBook Pro (M2 Pro) is on macOS 15.6.1. The Mac App Store currently offers Xcode 27, which needs
-macOS 26.6. Two ways forward; pick one:
+Update Sep 16 evening: macOS is now upgraded (reports 27.0), so the App Store's Xcode 27 installs fine.
+The command-line route (`mas install`) needs your admin password, which I cannot type, so:
 
-**Option A (recommended, cleanest): upgrade macOS, then install Xcode from the App Store.**
-1. **YOU** System Settings → General → Software Update → install macOS 26. Back up first (Time Machine or
-   just confirm iCloud/Obsidian/git are current). Budget an hour and ~25 GB free.
-2. **YOU** Open the App Store app, search Xcode, click Get. (~3 GB download, ~15 GB installed.)
-   Or in Terminal after signing into the App Store app once:
-   ```bash
-   mas install 497799835
-   ```
-3. **R2** `sudo xcode-select -s /Applications/Xcode.app`, accept the license, install the iOS simulator
-   runtime, build the app.
+1. **YOU** The App Store is already open on the Xcode page (or run `open "macappstore://apps.apple.com/app/id497799835"`).
+   Click **Get**, then **Install**. About 3 GB download, ~15 GB installed, 15–30 minutes.
+2. **YOU** Open Xcode once, accept the license, and let it install the iOS platform when it asks (another ~8 GB).
+3. **R2** Everything after that: `xcode-select`, simulators, build, fix compile errors, screenshots, TestFlight.
 
-**Option B (stay on macOS 15): download Xcode 26.x directly from Apple.**
-1. **YOU** Go to https://developer.apple.com/download/all/ and sign in with your Apple ID (free, no paid
-   account needed for downloads).
-2. **YOU** Download "Xcode 26.x" (the newest 26 release; ~3.5 GB `.xip`). Leave it in Downloads.
-3. **R2** Expand it, move it to /Applications, point `xcode-select` at it, install the iOS platform.
-
-Also note: the Command Line Tools on this Mac are in a broken state (the Swift compiler does not match its
-SDK). Installing full Xcode replaces them.
+Note: the Command Line Tools on this Mac were in a broken state (Swift compiler did not match its SDK).
+Installing full Xcode replaces them.
 
 ## 1. Apple Developer Program ($99/year)
 
@@ -111,7 +99,7 @@ Once enrolled, in https://appstoreconnect.apple.com:
 
 ## 8. What I need from you, in order
 
-1. Decide Option A or B for Xcode and do the **YOU** step (macOS upgrade + App Store, or the Xcode 26 download).
+1. Click Get on Xcode in the App Store (already open), then open Xcode once and accept the license.
 2. Enroll in the Developer Program (Individual), accept agreements, add banking and tax.
 3. Send me the Team ID.
 4. Sign in to Xcode with the Apple ID.
