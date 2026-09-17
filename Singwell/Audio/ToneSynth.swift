@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import SingwellCore
 
 /// A struck, decaying additive tone generated locally: a piano-like reference note,
@@ -15,13 +16,20 @@ final class ToneSynth {
     private let lock = NSLock()
     private var pending: [Voice] = []
     private var voices: [Voice] = []
+    /// Render-thread clock in samples, read from the main thread through an unfair lock.
+    private let clock = OSAllocatedUnfairLock<Int64>(initialState: 0)
     private var sampleTime: Int64 = 0
     private(set) var sampleRate: Double = 48000
-    private(set) var node: AVAudioSourceNode!
+    private(set) var node: AVAudioSourceNode?
 
-    init(sampleRate: Double) {
-        self.sampleRate = sampleRate
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+    /// `startingAt` carries the previous synth's clock (in seconds) across a sample-rate change so
+    /// anything scheduled against the old clock keeps its meaning.
+    init(sampleRate requested: Double, startingAt seconds: Double = 0) {
+        let rate = (requested.isFinite && requested >= 8000 && requested <= 192_000) ? requested : 48000
+        sampleRate = rate
+        sampleTime = Int64(max(0, seconds) * rate)
+        clock.withLock { $0 = sampleTime }
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 1) else { return }
         node = AVAudioSourceNode(format: format) { [weak self] _, _, frameCount, audioBufferList -> OSStatus in
             guard let self else { return noErr }
             self.render(frameCount: Int(frameCount), list: audioBufferList)
@@ -31,8 +39,7 @@ final class ToneSynth {
 
     /// Seconds of audio rendered so far. Schedules are expressed on this clock.
     var currentTime: Double {
-        lock.lock(); defer { lock.unlock() }
-        return Double(sampleTime) / sampleRate
+        Double(clock.withLock { $0 }) / sampleRate
     }
 
     /// Play a reference note. `time` is on the synth clock; nil means now.
@@ -55,9 +62,10 @@ final class ToneSynth {
 
     private func enqueue(frequencies: [Double], peaks: [Double], at time: Double?, duration: Double) {
         lock.lock(); defer { lock.unlock() }
-        let start = time.map { Int64(max(0, $0) * sampleRate) } ?? sampleTime
+        let nowSample = clock.withLock { $0 }
+        let start = time.map { Int64(max(0, $0) * sampleRate) } ?? nowSample
         pending.append(Voice(frequencies: frequencies, peaks: peaks, phases: Array(repeating: 0, count: frequencies.count),
-                             startSample: max(start, sampleTime), durationSamples: Int64(duration * sampleRate)))
+                             startSample: max(start, nowSample), durationSamples: Int64(duration * sampleRate)))
     }
 
     func stopAll() {
@@ -106,6 +114,7 @@ final class ToneSynth {
         }
         let end = sampleTime + Int64(frameCount)
         voices.removeAll { $0.startSample + $0.durationSamples <= end }
-        if lock.try() { sampleTime = end; lock.unlock() } else { sampleTime = end }
+        sampleTime = end
+        clock.withLock { $0 = end }
     }
 }

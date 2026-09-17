@@ -31,7 +31,7 @@ final class TakePlayer: NSObject, AVAudioPlayerDelegate {
         player.play()
         isPlaying = true
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+        timer = Timer.commonMode(interval: 1.0 / 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, let player = self.player else { return }
                 self.currentTime = player.currentTime

@@ -34,6 +34,8 @@ final class AudioEngine {
     private var windowSize = 4096
     private var recorder: TakeRecorder?
     private let recorderLock = NSLock()
+    /// All pitch analysis happens here, never on the audio render thread.
+    private let analysisQueue = DispatchQueue(label: "live.singwell.analysis", qos: .userInteractive)
     private(set) var inputSampleRate: Double = 48000
     var onReading: (@MainActor (PitchReading) -> Void)?
     private var interruptionObserver: NSObjectProtocol?
@@ -79,11 +81,21 @@ final class AudioEngine {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else { throw AudioEngineError.noInput }
-        inputSampleRate = format.sampleRate
-        windowSize = format.sampleRate > 48000 ? 8192 : 4096
-        analysisWindow = []
+        let rate = format.sampleRate
+        analysisQueue.sync {
+            inputSampleRate = rate
+            windowSize = rate > 48000 ? 8192 : 4096
+            analysisWindow = []
+        }
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
-            self?.consume(buffer)
+            guard let self else { return }
+            // Recording and analysis both take a copy; the render thread does nothing else.
+            self.recorderLock.lock()
+            let rec = self.recorder
+            self.recorderLock.unlock()
+            rec?.append(buffer)
+            guard let copy = buffer.monoCopy() else { return }
+            self.analysisQueue.async { self.consume(copy) }
         }
         tapInstalled = true
         try startEngineIfNeeded()
@@ -152,15 +164,16 @@ final class AudioEngine {
     private var synthAttached = false
 
     private func rebuildSynth(sampleRate: Double) {
-        if synthAttached { engine.detach(synth.node) ; synthAttached = false }
-        synth = ToneSynth(sampleRate: sampleRate)
+        if synthAttached, let node = synth.node { engine.detach(node) }
+        synthAttached = false
+        synth = ToneSynth(sampleRate: sampleRate, startingAt: synth.currentTime)
     }
 
     private func startEngineIfNeeded() throws {
-        if !synthAttached {
-            engine.attach(synth.node)
+        if !synthAttached, let node = synth.node {
+            engine.attach(node)
             let format = AVAudioFormat(standardFormatWithSampleRate: synth.sampleRate, channels: 1)
-            engine.connect(synth.node, to: engine.mainMixerNode, format: format)
+            engine.connect(node, to: engine.mainMixerNode, format: format)
             synthAttached = true
         }
         if !engine.isRunning {
@@ -170,11 +183,6 @@ final class AudioEngine {
     }
 
     private func consume(_ buffer: AVAudioPCMBuffer) {
-        recorderLock.lock()
-        let rec = recorder
-        recorderLock.unlock()
-        rec?.append(buffer)
-
         guard let channel = buffer.floatChannelData?[0] else { return }
         let count = Int(buffer.frameLength)
         analysisWindow.append(contentsOf: UnsafeBufferPointer(start: channel, count: count))

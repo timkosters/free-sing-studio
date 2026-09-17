@@ -71,6 +71,7 @@ targets:
     sources: [SingwellTests]
     dependencies:
       - target: Singwell
+      - package: SingwellCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.singwell.app.tests

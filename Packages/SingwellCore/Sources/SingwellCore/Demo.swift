@@ -5,6 +5,7 @@ public enum Demo {
     public struct Sample: Equatable, Sendable {
         public var midi: Double?
         public var level: Double
+        public init(midi: Double?, level: Double) { self.midi = midi; self.level = level }
     }
 
     /// Breath gap at the start of every phrase, in seconds.

@@ -27,7 +27,7 @@ struct PaywallView: View {
                         Text(reason).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
                     VStack(alignment: .leading, spacing: 10) {
-                        ForEach(benefits, id: \.1) { b in
+                        ForEach(Array(benefits.enumerated()), id: \.offset) { _, b in
                             HStack(spacing: 12) {
                                 Image(systemName: b.0).foregroundStyle(Color.voice).frame(width: 24)
                                 Text(b.1).font(.subheadline)

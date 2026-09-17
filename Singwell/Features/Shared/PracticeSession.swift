@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UIKit
 import SingwellCore
 
 /// Which surface is driving the session. Switching surfaces ends any drill in flight.
@@ -323,7 +324,7 @@ final class PracticeSession {
     private func showPlayed(_ midi: Int) {
         playedNote = midi
         keyTimer?.invalidate()
-        keyTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { [weak self] _ in
+        keyTimer = Timer.commonMode(interval: 1, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.playedNote = nil }
         }
     }
@@ -399,7 +400,7 @@ final class PracticeSession {
             warming = true
             warmLabel = "Get ready"
             warmTimer?.invalidate()
-            warmTimer = Timer.scheduledTimer(withTimeInterval: 0.025, repeats: true) { [weak self] _ in
+            warmTimer = Timer.commonMode(interval: 0.025, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.tickWarmup() }
             }
         } catch {
@@ -511,7 +512,7 @@ final class PracticeSession {
         dailyRun = DailyRun(routine: routine, index: 0, left: routine.steps[0].seconds, playing: true, logged: 0)
         await prepareStep()
         dailyTimer?.invalidate()
-        dailyTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+        dailyTimer = Timer.commonMode(interval: 0.25, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tickRoutine() }
         }
         applyIdleTimer()
@@ -664,7 +665,7 @@ final class PracticeSession {
         demoStart = now
         demoLastTarget = nil
         demoTargetSince = demoStart
-        demoTimer = Timer.scheduledTimer(withTimeInterval: 0.07, repeats: true) { [weak self] _ in
+        demoTimer = Timer.commonMode(interval: 0.07, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tickDemo() }
         }
         return true
@@ -690,6 +691,16 @@ final class PracticeSession {
         demoTimer = nil
         pitch = nil
         level = 0
+    }
+}
+
+extension Timer {
+    /// A repeating (or one-shot) timer that keeps firing while the user scrolls. `scheduledTimer`
+    /// only runs in the default run-loop mode, which pauses during ScrollView tracking.
+    static func commonMode(interval: TimeInterval, repeats: Bool, block: @escaping @Sendable (Timer) -> Void) -> Timer {
+        let timer = Timer(timeInterval: interval, repeats: repeats, block: block)
+        RunLoop.main.add(timer, forMode: .common)
+        return timer
     }
 }
 
