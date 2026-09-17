@@ -22,21 +22,30 @@ The routine content is specific rather than generic: cord closure ("goo"), the c
 
 **Try demo** switches the whole app to a synthetic voice. No microphone permission is requested, the trace turns violet, panels are labeled as synthetic, and recording is disabled. Demo results are illustrative and never enter saved practice history or the observed range map. The synthetic singer follows quest targets (with an occasional deliberate correction) and wanders a short melody in free-sing view, which makes it suitable for recording a public walkthrough.
 
-**Sync** is optional and off unless the deployment is configured for it. Signing in with an emailed six-digit code mirrors the practice calendar so one streak follows you between devices. Only the calendar is stored server-side: the day, seconds practised, steps finished and whether the routine was completed. No audio, no recordings and no range data ever leave the device. Signing out leaves everything in this browser untouched.
+**Sync** is optional. Signing in mirrors the practice calendar so one streak follows you between devices. You enter an email, get a sign-in link, and following it lands you back in the app signed in. Only the calendar is stored server-side: the day, seconds practised, steps finished and whether the routine was completed. No audio, no recordings and no range data ever leave the device. Signing out leaves everything in this browser untouched.
 
-## Optional sync setup
+Merging is deliberately dumb and therefore safe. Practice only accumulates, so the merge takes the larger value per field per day. That makes it commutative and idempotent: it can run in either direction, any number of times, without losing a session, double-counting one, or having to trust either device's clock.
 
-Skip this entirely to run the app with no accounts and no backend. To enable it:
+## Sync setup
 
-1. Create a free project at <https://supabase.com>.
-2. In the SQL Editor, run `supabase/schema.sql`. It creates `practice_days` and the row-level-security policies that keep each singer to their own rows.
-3. **Edit the email template.** Under Authentication → Emails → Magic Link, make sure the body contains `{{ .Token }}`. Supabase ships a template that only sends a clickable link; this app asks for a six-digit code, so without the token the email arrives with nothing to type.
-4. Copy the Project URL and the `anon` public key from Project Settings → API.
-5. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`) locally, and as environment variables on the host. They are build-time values, so redeploy after adding them.
+The hosted deployment is already configured. To point a fork at your own Supabase project:
 
-Supabase's built-in email sender is rate limited to a handful of messages an hour, which is fine for personal use. For anything wider, set custom SMTP under Authentication → Emails.
+1. `supabase login`, then `supabase projects create <name> --org-id <id> --region <region> --db-password <password>`.
+2. `supabase link --project-ref <ref>` and `supabase db push` to create `practice_days` with its row-level-security policies.
+3. `supabase config push` to apply `supabase/config.toml` — the site URL and the redirect allow-list, without which the sign-in link has nowhere valid to return to.
+4. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see `.env.example`) locally and on the host. They are build-time values, so redeploy after adding them.
 
-The auth client is code-split and fetched only when the sync panel is opened or a stored session already exists, so visitors who never sign in do not download it.
+Without those two variables the app runs exactly as it always did: no Sync button, everything in `localStorage`, no network calls.
+
+### Why a link rather than a six-digit code
+
+A code is the better experience, particularly on a phone, where a link can open in a different browser from the one that asked for it. Supabase refuses custom email templates on free-tier projects using its built-in mailer, and its stock template sends only `{{ .ConfirmationURL }}` — so a code-based flow would deliver an email with nothing to type.
+
+To switch to codes, configure custom SMTP under Authentication → Emails, uncomment the `[auth.email.template.magic_link]` block in `supabase/config.toml` (the template in `supabase/templates/magic_link.html` already contains `{{ .Token }}`), run `supabase config push`, and change `sendSignInLink` to pair `signInWithOtp` with `verifyOtp`.
+
+Supabase's built-in sender is rate limited to a handful of messages an hour, which is fine for personal use.
+
+The auth client is code-split and fetched only when the sync panel is opened, a stored session exists, or the page was opened from a sign-in link — so visitors who never sign in do not download it.
 
 ## Privacy and browser limitations
 

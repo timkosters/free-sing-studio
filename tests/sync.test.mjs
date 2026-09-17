@@ -6,7 +6,6 @@ import {
   dailyToRows,
   mergeDaily,
   needsPush,
-  isOtpCode,
   looksLikeEmail,
   authMessage,
 } from '../lib/sync.ts';
@@ -77,11 +76,7 @@ test('a push is skipped only when the server already matches', () => {
   assert.equal(needsPush(other, local), true);
 });
 
-test('codes and addresses are checked before a send is spent', () => {
-  assert.equal(isOtpCode('123456'), true);
-  assert.equal(isOtpCode(' 123456 '), true);
-  assert.equal(isOtpCode('12345'), false);
-  assert.equal(isOtpCode('12345a'), false);
+test('addresses are checked before a send is spent', () => {
   assert.equal(looksLikeEmail('timour@edgecity.live'), true);
   assert.equal(looksLikeEmail('timour@edgecity'), false);
   assert.equal(looksLikeEmail('not an email'), false);

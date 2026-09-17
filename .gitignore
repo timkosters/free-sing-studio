@@ -39,3 +39,6 @@ next-env.d.ts
 /work/
 *.tsbuildinfo
 /dist-vercel/
+
+# supabase cli scratch state
+supabase/.temp/

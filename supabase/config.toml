@@ -1,0 +1,30 @@
+# Remote configuration for the Free Sing project, applied with `supabase config push`.
+
+project_id = "acfhkglxhnpvxcinmgss"
+
+[auth]
+# Sign-in is by emailed link only: no passwords, no OAuth, no phone.
+enable_signup = true
+site_url = "https://free-sing-studio.vercel.app"
+# The link must be allowed to land back on whichever origin asked for it.
+additional_redirect_urls = [
+  "https://free-sing-studio.vercel.app",
+  "http://localhost:5173",
+]
+# A sign-in link is single use and short lived.
+jwt_expiry = 3600
+
+[auth.email]
+enable_signup = true
+# No separate confirmation step; following the link is the confirmation.
+enable_confirmations = false
+secure_password_change = false
+
+# Free-tier projects on Supabase's built-in mailer cannot install a custom
+# email template, so the stock "follow this link to log in" email is used.
+# To switch to a six-digit code instead, configure custom SMTP (Authentication
+# -> Emails -> SMTP Settings), then restore the block below and push again:
+#
+# [auth.email.template.magic_link]
+# subject = "Your Free Sing code"
+# content_path = "./supabase/templates/magic_link.html"

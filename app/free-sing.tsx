@@ -104,7 +104,6 @@ import {
   dailyToRows,
   mergeDaily,
   needsPush,
-  isOtpCode,
   looksLikeEmail,
   authMessage,
 } from '@/lib/sync';
@@ -112,6 +111,8 @@ import {
   supabase,
   syncConfigured,
   hasStoredSession,
+  hasAuthCallback,
+  clearAuthCallback,
   PRACTICE_TABLE,
 } from '@/lib/supabase';
 import { syntheticVoice, demoFreeSample } from '@/lib/demo';
@@ -233,9 +234,8 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     dailyPanel = useRef<HTMLElement | null>(null);
   const [account, setAccount] = useState<string | null>(null),
     [syncOpen, setSyncOpen] = useState(false),
-    [syncStage, setSyncStage] = useState<'email' | 'code'>('email'),
+    [syncStage, setSyncStage] = useState<'email' | 'sent'>('email'),
     [syncEmail, setSyncEmail] = useState(''),
-    [syncCode, setSyncCode] = useState(''),
     [syncBusy, setSyncBusy] = useState(false),
     [syncNote, setSyncNote] = useState(''),
     [syncedAt, setSyncedAt] = useState<number | null>(null);
@@ -1044,7 +1044,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     // oxlint-disable-next-line react/react-compiler -- Event or lifecycle timestamp, never sampled during render.
     setSyncedAt(Date.now());
   }
-  async function sendSyncCode() {
+  async function sendSignInLink() {
     const client = await supabase();
     if (!client) return;
     const email = syncEmail.trim();
@@ -1056,7 +1056,11 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setSyncNote('');
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        // Come back to whichever origin asked, so local and live both work.
+        emailRedirectTo: window.location.origin,
+      },
     });
     if (!mounted.current) return;
     setSyncBusy(false);
@@ -1064,36 +1068,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
       setSyncNote(authMessage(error));
       return;
     }
-    setSyncStage('code');
-    setSyncNote(`Six-digit code sent to ${email}.`);
-  }
-  async function verifySyncCode() {
-    const client = await supabase();
-    if (!client) return;
-    if (!isOtpCode(syncCode)) {
-      setSyncNote('Enter the six digits from the email.');
-      return;
-    }
-    setSyncBusy(true);
-    setSyncNote('');
-    const { data, error } = await client.auth.verifyOtp({
-      email: syncEmail.trim(),
-      token: syncCode.trim(),
-      type: 'email',
-    });
-    if (!mounted.current) return;
-    setSyncBusy(false);
-    if (error) {
-      setSyncNote(authMessage(error));
-      return;
-    }
-    setAccount(data.user?.email ?? syncEmail.trim());
-    setSyncCode('');
-    setSyncStage('email');
-    setSyncNote('Merging your practice\u2026');
-    await syncPractice();
-    if (!mounted.current) return;
-    setSyncNote('');
+    setSyncStage('sent');
   }
   /** Signing out leaves every day of practice in this browser untouched. */
   async function signOutSync() {
@@ -1104,23 +1079,37 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setAccount(null);
     setSyncedAt(null);
     setSyncStage('email');
-    setSyncCode('');
     setSyncNote('');
   }
   const syncLatest = useRef(syncPractice);
   useEffect(() => {
     syncLatest.current = syncPractice;
   });
-  // Restore an existing session on load, then reconcile the two calendars.
-  // Signed-out visitors never reach the import, so they never download it.
+  // Pick up a session on load: either one this browser already held, or one
+  // arriving in the URL from a sign-in link. Visitors with neither never reach
+  // the import, so they never download the auth client at all.
   useEffect(() => {
-    if (!hasStoredSession()) return;
+    const fromLink = hasAuthCallback();
+    if (!hasStoredSession() && !fromLink) return;
     void (async () => {
       const client = await supabase();
       if (!client || !mounted.current) return;
-      const { data } = await client.auth.getSession();
-      if (!mounted.current || !data.session) return;
+      // Creating the client consumes the tokens in the URL; clear them either
+      // way so they are not left in history or a shared link.
+      const { data, error } = await client.auth.getSession();
+      clearAuthCallback();
+      if (!mounted.current) return;
+      if (error || !data.session) {
+        if (fromLink) {
+          setSyncOpen(true);
+          setSyncNote(
+            'That sign-in link did not work. It may have expired or already been used. Send a fresh one.',
+          );
+        }
+        return;
+      }
       setAccount(data.session.user.email ?? 'signed in');
+      if (fromLink) setSyncOpen(true);
       void syncLatest.current();
     })();
   }, []);
@@ -1582,19 +1571,37 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                 <p>
                   <strong>Optional.</strong> Free Sing works with no account.
                   Sign in only if you want one streak across your laptop and
-                  your phone. We email a six-digit code; there is no password.
+                  your phone. We email you a link; there is no password.
                 </p>
                 <small>
                   Only your practice calendar is stored: the day, how long and
                   whether you finished. No audio, no recordings, ever.
                 </small>
               </div>
-              {syncStage === 'email' ? (
+              {syncStage === 'sent' ? (
+                <div className="fs-sync-actions fs-sync-sent">
+                  <p>
+                    <Check size={15} aria-hidden="true" /> Link sent to{' '}
+                    <strong>{syncEmail.trim()}</strong>. Open it on this device
+                    and you will land back here signed in.
+                  </p>
+                  <button
+                    type="button"
+                    className="fs-sync-back"
+                    onClick={() => {
+                      setSyncStage('email');
+                      setSyncNote('');
+                    }}
+                  >
+                    Send another link
+                  </button>
+                </div>
+              ) : (
                 <form
                   className="fs-sync-actions"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    void sendSyncCode();
+                    void sendSignInLink();
                   }}
                 >
                   <input
@@ -1607,40 +1614,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                   />
                   <button type="submit" disabled={syncBusy}>
                     {syncBusy ? <Loader size={15} /> : <CloudCheck size={15} />}
-                    {syncBusy ? 'Sending' : 'Email me a code'}
-                  </button>
-                </form>
-              ) : (
-                <form
-                  className="fs-sync-actions"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void verifySyncCode();
-                  }}
-                >
-                  <input
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    placeholder="123456"
-                    aria-label="Six-digit code"
-                    value={syncCode}
-                    onChange={(e) => setSyncCode(e.target.value)}
-                  />
-                  <button type="submit" disabled={syncBusy}>
-                    {syncBusy ? <Loader size={15} /> : <Check size={15} />}
-                    {syncBusy ? 'Checking' : 'Sign in'}
-                  </button>
-                  <button
-                    type="button"
-                    className="fs-sync-back"
-                    onClick={() => {
-                      setSyncStage('email');
-                      setSyncCode('');
-                      setSyncNote('');
-                    }}
-                  >
-                    Use a different email
+                    {syncBusy ? 'Sending' : 'Email me a link'}
                   </button>
                 </form>
               )}

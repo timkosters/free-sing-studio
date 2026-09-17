@@ -43,6 +43,23 @@ export function supabase(): Promise<SupabaseClient> | null {
   return client;
 }
 
+/** True when the page was opened from a sign-in link and carries its tokens. */
+export function hasAuthCallback(): boolean {
+  if (!syncConfigured || typeof window === 'undefined') return false;
+  const hash = window.location.hash;
+  return hash.includes('access_token=') || hash.includes('error_description=');
+}
+
+/** Strip auth tokens from the address bar once the session has been read. */
+export function clearAuthCallback(): void {
+  if (typeof window === 'undefined' || !window.location.hash) return;
+  window.history.replaceState(
+    null,
+    '',
+    window.location.pathname + window.location.search,
+  );
+}
+
 /**
  * Whether this browser already holds a session, answered from localStorage so
  * a first visit never pays to download the auth client just to find out it is

@@ -1,0 +1,18 @@
+<!--
+  Sign-in email for Free Sing.
+
+  The app asks for a six-digit code rather than a clickable link, so this
+  template must contain {{ .Token }}. Supabase's stock template sends only
+  {{ .ConfirmationURL }}, which would arrive with nothing to type.
+-->
+<h2>Your Free Sing code</h2>
+
+<p>Enter this code to sign in and sync your practice:</p>
+
+<p
+  style="font-size: 32px; font-weight: 700; letter-spacing: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;"
+>
+  {{ .Token }}
+</p>
+
+<p>It expires in an hour. If you did not ask for it, ignore this email.</p>

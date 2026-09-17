@@ -94,9 +94,6 @@ export function needsPush(remote: Daily, merged: Daily): boolean {
   });
 }
 
-/** A six-digit email code, as Supabase sends it. */
-export const isOtpCode = (value: string) => /^\d{6}$/.test(value.trim());
-
 /** Good enough to catch a typo before spending a send on it. */
 export const looksLikeEmail = (value: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
