@@ -1,0 +1,62 @@
+{
+  "identifier" : "SINGWELL-STOREKIT-LOCAL",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "39.99",
+      "familyShareable" : false,
+      "internalID" : "LIFETIME1",
+      "localizations" : [
+        { "description" : "Every Singwell Pro feature, forever.", "displayName" : "Singwell Pro · Lifetime", "locale" : "en_US" }
+      ],
+      "productID" : "live.singwell.pro.lifetime",
+      "referenceName" : "Pro Lifetime",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : { "_applicationInternalID" : "", "_developerTeamID" : "", "_lastSynchronizedDate" : 0 },
+  "subscriptionGroups" : [
+    {
+      "id" : "PROGROUP1",
+      "localizations" : [],
+      "name" : "Singwell Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "5.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "PROMONTHLY1",
+          "introductoryOffer" : { "internalID" : "INTRO1", "paymentMode" : "free", "subscriptionPeriod" : "P1W" },
+          "localizations" : [
+            { "description" : "Unlimited recordings, all routines, every drill.", "displayName" : "Singwell Pro · Monthly", "locale" : "en_US" }
+          ],
+          "productID" : "live.singwell.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "PROGROUP1",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "34.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "PROYEARLY1",
+          "introductoryOffer" : { "internalID" : "INTRO2", "paymentMode" : "free", "subscriptionPeriod" : "P1W" },
+          "localizations" : [
+            { "description" : "Unlimited recordings, all routines, every drill. Best value.", "displayName" : "Singwell Pro · Yearly", "locale" : "en_US" }
+          ],
+          "productID" : "live.singwell.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly",
+          "subscriptionGroupID" : "PROGROUP1",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : { "major" : 3, "minor" : 0 }
+}
