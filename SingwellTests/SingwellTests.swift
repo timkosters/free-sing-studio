@@ -34,7 +34,11 @@ final class SingwellTests: XCTestCase {
     func testSteadinessMeter() {
         let steady = (0..<20).map { (t: Double($0) * 0.07, midi: 60.02) }
         XCTAssertGreaterThan(PracticeSession.steadiness(of: steady) ?? 0, 0.9)
-        let wobbly = (0..<20).map { (t: Double($0) * 0.07, midi: 60 + ($0 % 2 == 0 ? 0.6 : -0.6)) }
+        var wobbly: [(t: Double, midi: Double)] = []
+        for i in 0..<20 {
+            let offset: Double = i % 2 == 0 ? 0.6 : -0.6
+            wobbly.append((t: Double(i) * 0.07, midi: 60 + offset))
+        }
         XCTAssertLessThan(PracticeSession.steadiness(of: wobbly) ?? 1, 0.2)
         XCTAssertNil(PracticeSession.steadiness(of: []))
     }

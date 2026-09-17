@@ -11,6 +11,20 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var tab: PracticeMode = .daily
 
+    /// Screenshot and QA hooks: `-singwell.tab sing|daily|train|library|progress`, `-singwell.demo`.
+    /// Only honoured when passed as process arguments (simulator, UI tests), never from the App Store build's normal launch.
+    private func applyLaunchArguments() {
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-singwell.tab"), i + 1 < args.count, let t = PracticeMode(rawValue: args[i + 1]) {
+            settings.onboarded = true
+            tab = t
+        }
+        if args.contains("-singwell.demo") {
+            settings.onboarded = true
+            session.enterDemo()
+        }
+    }
+
     var body: some View {
         Group {
             if settings.onboarded {
@@ -38,6 +52,7 @@ struct RootView: View {
         }
         .task {
             session.attach(progress: progress, library: library, settings: settings)
+            applyLaunchArguments()
             Haptics.enabled = settings.hapticsEnabled
             await store.load()
             await auth.refreshCredentialState()

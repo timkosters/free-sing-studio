@@ -31,7 +31,7 @@ struct SingView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 6) {
                         if session.inputActive { LiveDot(color: session.recording ? .red : .singGreen) }
-                        Text(statusLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text(statusLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1).fixedSize()
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -52,7 +52,7 @@ struct SingView: View {
 
     private var statusLabel: String {
         if session.recording { return "RECORDING" }
-        if session.demo { return "DEMO · SYNTHETIC" }
+        if session.demo { return "DEMO" }
         if session.busy { return "STARTING" }
         return session.listening ? "LISTENING" : "READY"
     }
