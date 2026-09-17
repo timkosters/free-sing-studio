@@ -19,6 +19,44 @@ export function noteName(midi: number) {
   const n = Math.round(midi);
   return names[((n % 12) + 12) % 12] + (Math.floor(n / 12) - 1);
 }
+/** Lowest fundamental treated as a voice: just under A1. Below is rumble, not singing. */
+export const MIN_HZ = 54;
+/** Highest fundamental treated as a voice, comfortably above any sung note. */
+export const MAX_HZ = 2200;
+
+/**
+ * Flatten a slow amplitude envelope while leaving the pitch periodicity alone.
+ *
+ * A lip trill is a normally-pitched tone whose loudness the lips flutter at
+ * roughly 20-35 Hz. That flutter is a real periodicity, and a strong one: at
+ * low notes it beats the vocal period, so YIN locks onto the flutter and
+ * reports a note two octaves below what is being sung, or nothing at all.
+ * Dividing by a short running magnitude equalises the loudness across the
+ * window so only the vocal period is left for YIN to find. Vibrato, which is
+ * shallower and slower, passes through untouched.
+ */
+function flattenEnvelope(buffer: Float32Array, sampleRate: number) {
+  // About 2ms: long enough to measure loudness, far shorter than the envelope
+  // changes being removed, and short enough to track a fast flutter on a low
+  // note, which is the case that fails first.
+  const window = Math.max(8, Math.floor(sampleRate / 500));
+  const magnitude = new Float32Array(buffer.length);
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i++) {
+    sum += Math.abs(buffer[i]);
+    if (i >= window) sum -= Math.abs(buffer[i - window]);
+    magnitude[i] = sum / Math.min(i + 1, window);
+  }
+  let peak = 0;
+  for (const m of magnitude) if (m > peak) peak = m;
+  // Never divide by near-silence, which would only amplify noise.
+  const floor = peak * 0.15;
+  const out = new Float32Array(buffer.length);
+  for (let i = 0; i < buffer.length; i++)
+    out[i] = buffer[i] / Math.max(magnitude[i], floor);
+  return out;
+}
+
 // YIN with cumulative mean normalization and parabolic interpolation.
 export function detectPitch(
   buffer: Float32Array,
@@ -39,17 +77,20 @@ export function detectPitch(
     buffer = reduced;
     sampleRate /= stride;
   }
+  // Judge silence on the original signal: flattening normalises loudness away,
+  // so gating afterwards would let room noise through as a confident note.
   let mean = 0;
   for (const n of buffer) mean += n;
   mean /= buffer.length;
   let power = 0;
   for (const n of buffer) power += (n - mean) ** 2;
   if (Math.sqrt(power / buffer.length) < 0.008) return null;
+  buffer = flattenEnvelope(buffer, sampleRate);
   const maxLag = Math.min(
-    Math.floor(sampleRate / 30),
+    Math.floor(sampleRate / MIN_HZ),
     Math.floor(buffer.length / 2) - 1,
   );
-  const minLag = Math.max(2, Math.floor(sampleRate / 2200));
+  const minLag = Math.max(2, Math.floor(sampleRate / MAX_HZ));
   const size = buffer.length - maxLag;
   const diff = new Float64Array(maxLag + 1);
   diff[0] = 1;
@@ -76,7 +117,7 @@ export function detectPitch(
     den = a - 2 * b + c;
   const refined = lag + (den === 0 ? 0 : (a - c) / (2 * den));
   const frequency = sampleRate / refined;
-  return frequency >= 30 && frequency <= 2200
+  return frequency >= MIN_HZ && frequency <= MAX_HZ
     ? { frequency, confidence: 1 - b }
     : null;
 }

@@ -1,6 +1,8 @@
 // The daily practice routine: a fixed, ordered set of steps with a clock.
-// Content comes from Timour's lessons with Dariia, Jones and Doris (Aug-Sep 2026);
-// every step carries the teacher note it came from so the "why" stays visible.
+// The order is how a lesson actually runs: free the body, settle the breath,
+// close the cords, cross the register break, then apply it to a song. Every
+// step carries the reason it exists, so the routine explains itself rather
+// than asking to be trusted.
 // Everything here is pure so the routine and streak maths can be unit-tested.
 
 /** How a step uses the audio engine. */
@@ -21,7 +23,7 @@ export type Step = {
   cue: string;
   /** Short, concrete lines shown while the step runs. */
   detail: string[];
-  /** Whose note this came from, shown small. */
+  /** Why this step is in the routine, shown small. */
   source: string;
   seconds: number;
   engine: StepEngine;
@@ -55,7 +57,7 @@ const WAKE: Step = {
     'Smile wide, then pucker. Repeat. Tongue side to side.',
     'Chin level. Feet apart, weight even, chest high.',
   ],
-  source: 'Jones · posture checklist and jaw release',
+  source: 'Tension in the jaw and shoulders shows up in the sound',
   seconds: 90,
   engine: 'none',
 };
@@ -70,7 +72,7 @@ const BELLY: Step = {
     'Take a small top-up breath between each number.',
     'Neck and throat stay free the whole time.',
   ],
-  source: 'Dariia · the fix for chest breathing and neck tension',
+  source: 'Breathing into the chest is what tightens the throat',
   seconds: 150,
   engine: 'breath',
   breath: [3, 2, 9],
@@ -86,7 +88,7 @@ const LADDER: Step = {
     'The stream stays even. No collapse at the end.',
     'Finish on a humming glide, low to high and back.',
   ],
-  source: 'Doris · fricatives · Jones · inhale/exhale ratios',
+  source: 'Steady air is what keeps a long phrase supported',
   seconds: 150,
   engine: 'none',
 };
@@ -101,7 +103,7 @@ const TWISTERS: Step = {
     'How much wood would a woodchuck chuck.',
     'Last round with nothing in your mouth: fast and clear.',
   ],
-  source: 'Dariia · clarity for singing on a mic',
+  source: 'Consonants are the first thing a microphone loses',
   seconds: 90,
   engine: 'none',
 };
@@ -116,7 +118,7 @@ const SIREN: Step = {
     'Do not stop or push at the break around F4. Glide straight through it.',
     'Watch the trail: you want one smooth line, not a step.',
   ],
-  source: 'Jones · warms up and locates the range',
+  source: 'Warms the voice and crosses the break without strain',
   seconds: 90,
   engine: 'mic',
 };
@@ -131,7 +133,7 @@ const GOO: Step = {
     'Aim for a clean, buzzy tone. No air leaking around the note.',
     'If it turns breathy, come back down and restart lower.',
   ],
-  source: 'Doris · your cords are not fully adducting — this is the fix',
+  source: 'A breathy tone usually means the cords are not quite meeting',
   seconds: 180,
   engine: 'mic',
 };
@@ -146,7 +148,7 @@ const OO: Step = {
     'Rest, then repeat a tone higher.',
     'The meter shows how steady you actually are.',
   ],
-  source: 'Doris · control drill against breathiness',
+  source: 'A held note is where wobble and escaping air become obvious',
   seconds: 120,
   engine: 'hold',
   hold: 60,
@@ -155,21 +157,21 @@ const OO: Step = {
 const BRIDGE: Step = {
   id: 'bridge',
   title: 'The bridge — chest into head',
-  cue: 'Glide across F4 to A4 on "ng" or "oo". Glide in. Never jump.',
+  cue: 'Slide up through the place your voice wants to flip. Glide. Never jump.',
   detail: [
-    'Start below the break in chest, slide up through it, keep going into head.',
+    'Find your break first: siren slowly until the tone wants to change gear.',
+    'Start below it in chest, slide up through it, keep going into head voice.',
     'Mouth stays open. Do not brace or anticipate the note before it arrives.',
-    'If it cracks, go slower and quieter, not louder.',
-    'Then reverse: start in head voice and slide down through the break.',
+    'If it cracks, go slower and quieter, not louder. Then slide back down.',
   ],
-  source: 'Doris · the gap between your registers is the core work',
+  source: 'The gap between chest and head voice is the slowest thing to build',
   seconds: 180,
   engine: 'mic',
 };
 
-const BLACKBIRD: Step = {
+const HARD_LINE: Step = {
   id: 'blackbird',
-  title: 'Blackbird — the hard line',
+  title: 'Your hardest line',
   cue: '"Into the light of a dark black night." On loop.',
   detail: [
     'This is the passage that sits right on your break. That is why it is here.',
@@ -177,7 +179,7 @@ const BLACKBIRD: Step = {
     'Head neutral. Do not crane upward. Move side to side instead.',
     'Lead the sound forward. Do not land heavily on each syllable.',
   ],
-  source: 'Dariia · repeat this line daily as a dedicated exercise',
+  source: 'One hard bar, repeated, beats another run at the whole song',
   seconds: 180,
   engine: 'mic',
 };
@@ -190,9 +192,9 @@ const NOI: Step = {
     'Sing "noi" on a descending run into your low range.',
     'Keep the sound at the front of the face, not in the throat.',
     'A gentle yawn shape before you start opens the space.',
-    'Doris thinks there is an E2 down there. Go and find it.',
+    'Go one semitone lower than you think you have. It is usually there.',
   ],
-  source: 'Doris · room to extend lower, possibly to E2',
+  source: 'Low notes get swallowed long before they actually run out',
   seconds: 90,
   engine: 'mic',
 };
@@ -202,12 +204,12 @@ const SONG: Step = {
   title: 'Song of the day',
   cue: 'One section. Not the whole song.',
   detail: [
-    'Blackbird, Vienna, or Bless the Telephone. Pick one.',
+    'Whatever you are working on. One song, not a playlist.',
     'Take one or two lines. Belly breath before each phrase.',
     'Repeat the section rather than running the whole thing.',
     'Record a take. In a few weeks you get to compare honestly.',
   ],
-  source: 'Dariia · sections, not run-throughs · Doris · record and compare',
+  source: 'Sections build a song; run-throughs rehearse the mistakes',
   seconds: 240,
   engine: 'mic',
 };
@@ -246,7 +248,7 @@ export const ROUTINES: Routine[] = [
       at(GOO, 150),
       at(OO, 90),
       at(BRIDGE, 150),
-      at(BLACKBIRD, 120),
+      at(HARD_LINE, 120),
       at(NOI, 90),
       at(SONG, 150),
     ],
@@ -261,7 +263,7 @@ export const ROUTINES: Routine[] = [
       at(SIREN, 60),
       at(GOO, 120),
       at(BRIDGE, 180),
-      at(BLACKBIRD, 150),
+      at(HARD_LINE, 150),
       at(OO, 90),
       at(BRIDGE, 120),
     ],

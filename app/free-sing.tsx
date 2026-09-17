@@ -171,7 +171,7 @@ const MODES: { id: Mode; label: string; icon: typeof Music }[] = [
 const INTRO: Record<Mode, [string, string]> = {
   daily: [
     'Ten minutes. Every day.',
-    'A guided routine built from your lessons. One step at a time, on a clock.',
+    'A guided routine, one step at a time, on a clock. Short beats occasional.',
   ],
   sing: [
     'Meet your voice.',
@@ -1418,7 +1418,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
             <AudioLines />
             free sing<span className="fs-dot">.</span>
           </span>
-          <span className="fs-free">A free project · no account needed</span>
+          <span className="fs-free">Your voice never leaves your device</span>
         </div>
         <div className="fs-header-actions">
           {onBack && (
@@ -1844,9 +1844,8 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                   {routineLength(routineById(routineId))}
                 </button>
                 <p className="fs-plan-note">
-                  Built from your lessons with Dariia, Jones and Doris. The
-                  microphone only turns on for the steps that show your pitch.
-                  Nothing leaves this device.
+                  The microphone turns on only for the steps that show your
+                  pitch.
                 </p>
               </div>
             </>
@@ -2668,11 +2667,11 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
       )}
       <footer className="fs-footer">
         <p>
-          <strong>Free to use. Private by design.</strong> Audio and recordings
-          stay on this device. No uploads, accounts or ads. Recordings are
-          temporary until downloaded; each take can run for up to 10 minutes.
-          Live listening has no timer. Practice history lives in this browser’s
-          local storage and can be cleared any time.
+          <strong>Your voice stays on your device.</strong> Audio is analysed
+          in the browser and never uploaded. Recordings are temporary until you
+          download them; each take can run for up to 10 minutes, and live
+          listening has no timer. No ads, and no account is required. Signing
+          in is optional and syncs only your practice calendar, never audio.
         </p>
         <p>
           Pitch estimates can jump with noise, breathiness or multiple sounds.

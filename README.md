@@ -50,9 +50,9 @@ The auth client is code-split and fetched only when the sync panel is opened, a 
 ## Privacy and browser limitations
 
 - Audio never leaves the device. There are no uploads, accounts, analytics or third-party requests. Reference tones are synthesized locally.
-- Recordings are temporary until you download them. Practice history, the daily streak calendar, quest settings and theme preference persist in this browser's `localStorage`; clearing site data removes them. There is no account, so progress does not follow you to another browser or device.
+- Recordings are temporary until you download them. Practice history, the daily streak calendar, quest settings and theme preference persist in this browser's `localStorage`; clearing site data removes them. Without signing in, progress does not follow you to another browser or device.
 - Microphone access requires HTTPS or `localhost` and a browser with `getUserMedia` (current Chrome, Safari, Firefox, Edge). Recording additionally requires `MediaRecorder`; without it the pitch display still works.
-- The detector estimates a single (monophonic) pitch from about C1 to C7. Estimates can jump with background noise, breathiness or several sounds at once, and sustained octave errors are possible. It cannot identify vocal registers, judge strain or measure a "true" range.
+- The detector estimates a single (monophonic) pitch from about A1 to C7. Nothing below A1 is treated as a voice, which is what keeps a lip trill's 20-35 Hz flutter from being mistaken for the note. Estimates can jump with background noise, breathiness or several sounds at once, and sustained octave errors are possible. It cannot identify vocal registers, judge strain or measure a "true" range.
 - Mobile browsers may suspend audio when the page is in the background or the screen locks. Keep the page open and the device awake.
 - Use headphones during warm-ups and quests so the microphone does not pick up the reference tones.
 
