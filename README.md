@@ -1,6 +1,6 @@
-# Free Sing
+# Singwell
 
-A free, browser-only singing companion. Everything runs on your device: a guided daily practice routine with streak tracking, live pitch tracking on a chromatic piano roll, temporary recordings with synchronized pitch-trail replay, optional call-and-response warm-ups, a gentle Pitch Quest, a session range map with local practice history, and a labeled demo mode that needs no microphone.
+A browser-based singing companion, sharing its name and its logic with the Singwell iOS app. Everything runs on your device: a guided daily practice routine with streak tracking, live pitch tracking on a chromatic piano roll, temporary recordings with synchronized pitch-trail replay, optional call-and-response warm-ups, a gentle Pitch Quest, a session range map with local practice history, and a labeled demo mode that needs no microphone.
 
 Source: <https://github.com/timkosters/free-sing-studio>
 
@@ -8,9 +8,15 @@ Try it: <https://free-sing-studio.vercel.app>
 
 ## What it does
 
+**First run** introduces the app once, to anyone who has never practised here: the routine decides for you, the app hears the note, and turning up is what gets measured. It is skippable, and someone with practice history never sees it.
+
 **Daily practice** (default view) runs a guided routine one step at a time on a clock. Three lengths: Quick (11 min), Full (20 min) and Bridge focus (15 min). Each step shows one instruction, a short list of cues, a countdown and the teacher note it came from. Breathing steps show an expand/hold/release pacer instead of a clock; steps that show your own pitch turn the microphone and piano roll on, and the others leave it off. Pause, step back, skip ahead or end early at any point; time already practised is banked either way. A streak counter, a 28-day calendar and lifetime totals are stored in this browser's `localStorage` under `free-sing-daily-v1`.
 
-The routine content is specific rather than generic: cord closure ("goo"), the chest-to-head bridge, belly breath, forward low notes and breath-control ratios, in the order a teacher would run them.
+The routine content is specific rather than generic: cord closure ("goo"), the chest-to-head bridge, belly breath, forward low notes and breath-control ratios, in the order a lesson would run them. What it deliberately does not do is name notes: every singer's register break sits somewhere different, so the shipped wording asks you to find your own.
+
+**Your voice** fills that gap for anyone signed in. Range, where the break sits, the songs in progress and the one phrase being drilled live in that singer's own row and are folded into the step wording at render time, so the bridge step names your two notes and the song step lists your songs. With nothing filled in, every step keeps exactly the wording it ships with.
+
+While the microphone is on, a fourteen-bar meter shows the last second of input level, so it is always obvious whether the app can hear you. Breathing steps sound a quiet swell on the inhale and the exhale, which can be silenced from the step itself.
 
 **Free sing** shows your detected note, frequency and cents offset while a ten-second pitch trail scrolls across a C1–C7 piano roll. Click any key to hear a locally synthesized reference tone. Record a take, replay it with its pitch trail, and download it. Takes live in memory only; refreshing or closing the page discards them. Each take is limited to ten minutes, while listening has no timer.
 

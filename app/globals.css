@@ -20,33 +20,42 @@
   --radius: 0.7rem;
 }
 :root {
-  --background: #eef2f7;
-  --foreground: #142236;
+  --background: #eef1f4;
+  --foreground: #12161c;
   --card: #fff;
-  --muted: #e2e9f0;
-  --muted-foreground: #506276;
-  --border: #ccd6e2;
-  --primary: #244dd0;
-  --primary-foreground: white;
-  --green: #147642;
-  --gold: #9a5500;
-  --plot: #f6f8fb;
-  --band: #fbe9c7;
-  --radius: 0.7rem;
+  --muted: #e2e7ed;
+  --muted-foreground: #5b6673;
+  --border: #d5dce4;
+  --primary: #0f766e;
+  --primary-foreground: #fff;
+  --green: #0f766e;
+  --gold: #a07708;
+  --plot: #f7f9fb;
+  --band: #fbeecd;
+  --radius: 1.1rem;
+  /* Pill controls and soft card corners are the shape language. */
+  --radius-pill: 100px;
+  --radius-card: 22px;
+  /* One easing everywhere, so the whole interface decelerates alike. */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --shadow-card: 0 1px 2px rgba(18, 22, 28, 0.04);
+  --shadow-lift: 0 10px 30px rgba(15, 118, 110, 0.13);
 }
 .dark {
-  --background: #0a121d;
-  --foreground: #eff4fc;
-  --card: #111e2d;
-  --muted: #1a2b3e;
-  --muted-foreground: #a5b7c9;
-  --border: #2b3e52;
-  --primary: #b9ee6b;
-  --primary-foreground: #10220d;
-  --green: #b9ee6b;
-  --gold: #f4bf65;
-  --plot: #0d1724;
-  --band: #342d23;
+  --background: #0e1417;
+  --foreground: #e9eff1;
+  --card: #161e22;
+  --muted: #1e282d;
+  --muted-foreground: #9aabb2;
+  --border: #2a373d;
+  --primary: #2dd4bf;
+  --primary-foreground: #06201d;
+  --green: #2dd4bf;
+  --gold: #f0b429;
+  --plot: #111a1e;
+  --band: #2c2618;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 * {
   box-sizing: border-box;

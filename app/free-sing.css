@@ -1615,3 +1615,700 @@
   color: var(--primary);
   flex-shrink: 0;
 }
+
+/* ================================================================ */
+/* Direction C: soft ground, white cards, pill controls, serif display */
+/* ================================================================ */
+.sing-app {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+.sing-app h1,
+.sing-app h2,
+.fs-brand,
+.fs-step-clock strong,
+.fs-streak-now strong,
+.fs-streak-stats dd,
+.fs-routine-pick h3,
+.fs-plan-title {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.012em;
+}
+.fs-intro h1 {
+  font-weight: 300;
+}
+.fs-brand {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.fs-daily,
+.fs-panel,
+.fs-quest,
+.fs-sync,
+.fs-console,
+.fs-roll-section,
+.fs-call-response,
+.fs-voice {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+/* Every control is a pill; the only square things are the calendar and roll. */
+.sing-app button,
+.sing-app select,
+.sing-app .fs-sync-actions input {
+  border-radius: var(--radius-pill);
+  transition:
+    background-color 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    color 0.18s var(--ease),
+    transform 0.14s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.sing-app button:active:not(:disabled) {
+  transform: scale(0.975);
+}
+.sing-app .fs-start-daily,
+.sing-app .fs-step-controls button,
+.sing-app .fs-voice-save {
+  border-radius: var(--radius-pill);
+}
+.sing-app .fs-start-daily {
+  box-shadow: var(--shadow-lift);
+}
+.sing-app .fs-start-daily:hover {
+  filter: none;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(15, 118, 110, 0.22);
+}
+.fs-nav-tabs {
+  background: var(--muted);
+  border-radius: var(--radius-pill);
+  padding: 5px;
+  gap: 2px;
+}
+.sing-app .fs-nav-tabs button {
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  padding: 8px 16px;
+}
+.sing-app .fs-nav-tabs button:hover {
+  color: var(--foreground);
+}
+.sing-app .fs-nav-active {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-card);
+}
+.sing-app .fs-routine-pick {
+  border-radius: 20px;
+}
+.sing-app .fs-routine-pick:hover {
+  transform: translateY(-1px);
+}
+
+/* The input meter: a scrolling waveform of what was actually sung. */
+.fs-meter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 26px;
+  margin-top: 8px;
+}
+.fs-meter i {
+  flex: 1;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 2px;
+  background: var(--border);
+  transform: scaleY(0.08);
+  transition: transform 90ms linear;
+}
+.fs-meter-on i {
+  background: var(--primary);
+}
+.fs-demo .fs-meter-on i {
+  background: var(--voice);
+}
+
+.fs-breath-mute {
+  align-self: center;
+  font-size: 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+/* Step transitions: the copy settles in, it does not slide about. */
+.fs-step-copy,
+.fs-step-side {
+  animation: fs-settle 0.34s var(--ease) both;
+}
+.fs-step-side {
+  animation-delay: 0.04s;
+}
+@keyframes fs-settle {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+}
+.fs-daily,
+.fs-voice,
+.fs-sync {
+  animation: fs-settle 0.28s var(--ease) both;
+}
+.fs-day-done {
+  animation: fs-settle 0.4s var(--ease) both;
+}
+
+/* First run */
+.fs-onboard {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 24px;
+  border: none;
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  animation: fs-fade 0.3s var(--ease) both;
+}
+@keyframes fs-fade {
+  from {
+    opacity: 0;
+  }
+}
+.fs-onboard-card {
+  width: 100%;
+  max-width: 1080px;
+  background: var(--card);
+  border-radius: 28px;
+  box-shadow: 0 26px 70px rgba(18, 22, 28, 0.16);
+  padding: 44px 48px 36px;
+  text-align: center;
+  animation: fs-rise 0.42s var(--ease) both;
+}
+@keyframes fs-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+}
+.fs-onboard-brand {
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.fs-onboard-card h1 {
+  margin: 0;
+  font-size: clamp(27px, 3.4vw, 40px);
+  font-weight: 300;
+  line-height: 1.12;
+}
+.fs-onboard-lede {
+  margin: 12px auto 0;
+  max-width: 58ch;
+  font-size: 16px;
+  color: var(--muted-foreground);
+}
+.fs-onboard-panels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 34px;
+  text-align: left;
+}
+.fs-onboard-panels article {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 22px 22px 24px;
+  opacity: 0.55;
+  transition:
+    opacity 0.3s var(--ease),
+    border-color 0.3s var(--ease),
+    transform 0.3s var(--ease);
+}
+.fs-onboard-panels .fs-panel-on {
+  opacity: 1;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+.fs-onboard-panels h2 {
+  margin: 18px 0 0;
+  font-size: 21px;
+}
+.fs-onboard-panels p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted-foreground);
+}
+.fs-art {
+  height: 92px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 14px;
+  background: var(--plot);
+}
+.fs-art-steps {
+  flex-direction: column;
+  gap: 7px;
+  padding: 0 24px;
+}
+.fs-art-row {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--muted);
+}
+.fs-art-done {
+  background: var(--primary);
+}
+.fs-art-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1.5px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  animation: fs-art-breathe 6s var(--ease) infinite;
+}
+@keyframes fs-art-breathe {
+  0%,
+  100% {
+    transform: scale(0.62);
+  }
+  45%,
+  60% {
+    transform: scale(1);
+  }
+}
+.fs-art-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 40px;
+}
+.fs-art-bars i {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--primary);
+  transform-origin: bottom;
+  animation: fs-art-bar 1.5s ease-in-out infinite;
+}
+.fs-art-bars i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.fs-art-bars i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+.fs-art-bars i:nth-child(4) {
+  animation-delay: 0.48s;
+}
+@keyframes fs-art-bar {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.fs-art-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  width: 132px;
+}
+.fs-art-grid i {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--muted);
+}
+.fs-art-lit {
+  background: var(--primary);
+}
+.fs-onboard-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.fs-onboard-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.sing-app .fs-onboard-dots button {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--border);
+  cursor: pointer;
+}
+.sing-app .fs-dot-on {
+  background: var(--primary);
+  transform: scale(1.25);
+}
+.sing-app .fs-onboard-go {
+  padding: 15px 34px;
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-lift);
+}
+.sing-app .fs-onboard-skip {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Your voice */
+.fs-voice {
+  margin: 16px 0 0;
+  padding: 26px 30px 28px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.fs-voice-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.fs-voice-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+.fs-voice-head p {
+  margin: 6px 0 0;
+  max-width: 66ch;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.sing-app .fs-voice-head button {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+.fs-voice-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+.fs-voice-grid label,
+.fs-voice-line {
+  display: block;
+}
+.fs-voice-grid span,
+.fs-voice-line span,
+.fs-voice-songs > span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 6px;
+}
+.sing-app .fs-voice-grid select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--plot);
+  color: inherit;
+  font-size: 15px;
+}
+.sing-app .fs-voice-adopt {
+  margin-top: 12px;
+  padding: 9px 16px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+.fs-voice-line {
+  margin-top: 22px;
+}
+.fs-voice-line input,
+.fs-voice-songs input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--plot);
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+}
+.fs-voice-songs {
+  margin-top: 22px;
+}
+.fs-song-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.fs-song-tags span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 8px 7px 14px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 13px;
+  animation: fs-settle 0.24s var(--ease) both;
+}
+.sing-app .fs-song-tags button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.fs-voice-songs form {
+  display: flex;
+  gap: 8px;
+}
+.fs-voice-songs form input {
+  flex: 1 1 200px;
+}
+.sing-app .fs-voice-songs form button {
+  padding: 11px 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.fs-voice-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.fs-voice-foot small {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.fs-voice-foot > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.fs-voice-foot em {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--primary);
+}
+.sing-app .fs-voice-save {
+  padding: 12px 28px;
+  border: none;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sing-app .fs-voice-open {
+  margin-top: 14px;
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .fs-onboard-panels {
+    grid-template-columns: 1fr;
+  }
+  .fs-onboard-panels article:not(.fs-panel-on) {
+    display: none;
+  }
+  .fs-onboard-card {
+    padding: 30px 22px 26px;
+  }
+  .fs-voice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-step-copy,
+  .fs-step-side,
+  .fs-daily,
+  .fs-voice,
+  .fs-sync,
+  .fs-day-done,
+  .fs-onboard,
+  .fs-onboard-card,
+  .fs-song-tags span,
+  .fs-art-ring,
+  .fs-art-bars i {
+    animation: none;
+  }
+  .sing-app button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* The pacer ring: a white disc that swells, with a halo trailing behind it. */
+.fs-breath {
+  position: relative;
+  overflow: hidden;
+}
+.fs-breath i {
+  position: relative;
+  z-index: 1;
+  background: var(--card);
+  border: 1.5px solid var(--primary);
+  box-shadow: var(--shadow-lift);
+}
+.fs-breath::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 108px;
+  height: 108px;
+  margin: -54px 0 0 -54px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0;
+  transform: scale(0.45) translateY(-18px);
+}
+.fs-breath-on::before {
+  animation: fs-halo var(--cycle, 14s) ease-in-out infinite;
+}
+@keyframes fs-halo {
+  0% {
+    opacity: 0.08;
+    transform: scale(0.45) translateY(-18px);
+  }
+  21.4% {
+    opacity: 0.22;
+    transform: scale(1.18) translateY(-18px);
+  }
+  35.7% {
+    opacity: 0.22;
+    transform: scale(1.18) translateY(-18px);
+  }
+  100% {
+    opacity: 0.08;
+    transform: scale(0.45) translateY(-18px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-breath-on::before {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  /* The wordmark keeps the first line to itself; the controls share the next. */
+  .fs-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .fs-header-actions {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+  .sing-app .fs-header-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .sing-app .fs-header-actions button,
+  .sing-app .fs-header-actions select {
+    padding: 8px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .sing-app .fs-header-actions select {
+    max-width: none;
+  }
+  .fs-free {
+    display: block;
+  }
+  /* Five modes will never fit; let them scroll rather than overflow the page. */
+  .fs-nav-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .fs-nav-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .sing-app .fs-nav-tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+  .fs-voice {
+    padding: 20px 18px 22px;
+  }
+  .fs-voice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .fs-voice-foot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fs-voice-foot > div {
+    justify-content: space-between;
+  }
+  .sing-app .fs-voice-save {
+    flex-grow: 1;
+    justify-content: center;
+  }
+}
+/* Nothing should ever make the page scroll sideways. */
+.sing-app {
+  overflow-x: clip;
+}

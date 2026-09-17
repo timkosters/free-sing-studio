@@ -3,13 +3,15 @@
 project_id = "acfhkglxhnpvxcinmgss"
 
 [auth]
-# Sign-in is by emailed link only: no passwords, no OAuth, no phone.
+# Sign-in is by emailed link, plus native Sign in with Apple from the iOS app. No passwords, no phone.
 enable_signup = true
 site_url = "https://free-sing-studio.vercel.app"
 # The link must be allowed to land back on whichever origin asked for it.
 additional_redirect_urls = [
   "https://free-sing-studio.vercel.app",
   "http://localhost:5173",
+  # The iOS app: a sign-in link opens the app directly via its URL scheme.
+  "singwell://auth-callback",
 ]
 # A sign-in link is single use and short lived.
 jwt_expiry = 3600
@@ -28,3 +30,11 @@ secure_password_change = false
 # [auth.email.template.magic_link]
 # subject = "Your Free Sing code"
 # content_path = "./supabase/templates/magic_link.html"
+
+# Native Sign in with Apple from the iOS app. The app sends Apple's identity token
+# straight to Supabase; the bundle identifier is the audience Supabase accepts.
+# No client secret is needed for the native flow.
+[auth.external.apple]
+enabled = true
+client_id = "live.singwell.app"
+secret = ""

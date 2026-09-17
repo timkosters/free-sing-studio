@@ -19,6 +19,7 @@ const anonKey = env.VITE_SUPABASE_ANON_KEY;
 export const syncConfigured = Boolean(url && anonKey);
 
 export const PRACTICE_TABLE = 'practice_days';
+export const PROFILE_TABLE = 'singer_profile';
 
 let client: Promise<SupabaseClient> | null = null;
 

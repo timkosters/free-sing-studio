@@ -115,7 +115,7 @@ const SIREN: Step = {
   detail: [
     'Lips loose and buzzing. If they stall, press the cheeks in lightly.',
     'Slide up through your whole range and back down. Four passes.',
-    'Do not stop or push at the break around F4. Glide straight through it.',
+    'Do not stop or push where it wants to change gear. Glide through it.',
     'Watch the trail: you want one smooth line, not a step.',
   ],
   source: 'Warms the voice and crosses the break without strain',
@@ -187,7 +187,7 @@ const HARD_LINE: Step = {
 const NOI: Step = {
   id: 'noi',
   title: 'Low notes forward — "noi"',
-  cue: 'Down toward F#2. Bring it forward. Do not swallow it.',
+  cue: 'Down to the bottom of your range. Bring it forward, do not swallow it.',
   detail: [
     'Sing "noi" on a descending run into your low range.',
     'Keep the sound at the front of the face, not in the throat.',
@@ -238,7 +238,7 @@ export const ROUTINES: Routine[] = [
   {
     id: 'full',
     label: 'Full',
-    blurb: 'Everything your teachers asked for, in order.',
+    blurb: 'Everything, in the order a lesson runs it.',
     steps: [
       at(WAKE, 60),
       at(BELLY, 120),

@@ -25,6 +25,7 @@ import {
   Wind,
   CalendarDays,
   ChevronLeft,
+  ChevronRight,
   CloudCheck,
   LogOut,
   Loader,
@@ -114,7 +115,22 @@ import {
   hasAuthCallback,
   clearAuthCallback,
   PRACTICE_TABLE,
+  PROFILE_TABLE,
 } from '@/lib/supabase';
+import {
+  PANELS,
+  ONBOARDING_KEY,
+  shouldOnboard,
+  markOnboarded,
+} from '@/lib/onboarding';
+import {
+  emptyProfile,
+  profileIsEmpty,
+  rowToProfile,
+  profileToRow,
+  personalizeSteps,
+  type Profile,
+} from '@/lib/profile';
 import { syntheticVoice, demoFreeSample } from '@/lib/demo';
 import './free-sing.css';
 
@@ -191,6 +207,10 @@ const INTRO: Record<Mode, [string, string]> = {
   ],
 };
 const QUEST_SETTINGS_KEY = 'free-sing-quest-v1';
+/** Bars in the input meter; at one sample per 70ms this is about a second of sound. */
+const METER_BARS = 14;
+/** The notes a singer can pick from in their profile: E2 up to C6. */
+const NOTE_CHOICES = Array.from({ length: 45 }, (_, i) => i + 40);
 /** Circumference of the hold ring (r = 52) used for the stroke-dash progress. */
 const HOLD_RING = 2 * Math.PI * 52;
 const RANGE_MAP_LOW = QUEST_LOWEST - 0.5,
@@ -207,7 +227,9 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     [error, setError] = useState('');
   const [pitch, setPitch] = useState<number | null>(null),
     [frames, setFrames] = useState<Frame[]>([]),
-    [level, setLevel] = useState(0);
+    [levels, setLevels] = useState<number[]>(() =>
+      Array.from({ length: METER_BARS }, () => 0),
+    );
   const [recording, setRecording] = useState(false),
     [recordSeconds, setRecordSeconds] = useState(0),
     [takes, setTakes] = useState<Take[]>([]);
@@ -232,6 +254,15 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   const dailyRef = useRef<Daily>(emptyDaily()),
     runRef = useRef<DailyRun | null>(null),
     dailyPanel = useRef<HTMLElement | null>(null);
+  const [breathSound, setBreathSound] = useState(true);
+  const [onboarding, setOnboarding] = useState(false),
+    [panel, setPanel] = useState(0);
+  const [profile, setProfile] = useState<Profile>(emptyProfile),
+    [profileOpen, setProfileOpen] = useState(false),
+    [profileSaving, setProfileSaving] = useState(false),
+    [profileNote, setProfileNote] = useState('');
+  const profileRef = useRef<Profile>(emptyProfile());
+  const profileLatest = useRef<() => Promise<void>>(() => Promise.resolve());
   const [account, setAccount] = useState<string | null>(null),
     [syncOpen, setSyncOpen] = useState(false),
     [syncStage, setSyncStage] = useState<'email' | 'sent'>('email'),
@@ -382,7 +413,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setListening(false);
     setBusy(false);
     setPitch(null);
-    setLevel(0);
+    setLevels(Array.from({ length: METER_BARS }, () => 0));
   }
   // Shared by the microphone and the synthetic demo voice. Only real input
   // feeds the range map and history; the synthetic flag keeps demo data out.
@@ -394,7 +425,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   ) {
     // Ignore the audible reference and a short tail; demo input is independent.
     if (!synthetic && now < referenceUntil.current) m = null;
-    setLevel(lvl);
+    setLevels((old) => [...old.slice(1), lvl]);
     const w = warm.current,
       c = ctx.current;
     if (w && c) {
@@ -609,7 +640,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     demoDriver.current = null;
     setDemoRunning(false);
     setPitch(null);
-    setLevel(0);
+    setLevels(Array.from({ length: METER_BARS }, () => 0));
   }
   async function ensureInput(): Promise<boolean> {
     if (demoRef.current) return startDemoVoice();
@@ -766,6 +797,35 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
         g.disconnect();
       };
     });
+  }
+  /**
+   * A breath cue: one slow swell that rises for an inhale and falls for an
+   * exhale. Quiet and low on purpose, so it guides the count without becoming
+   * something to listen to.
+   */
+  function breathTone(rising: boolean) {
+    const c = ctx.current;
+    if (!c || c.state !== 'running') return;
+    const start = c.currentTime + 0.01,
+      length = 0.9;
+    const o = c.createOscillator(),
+      g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(rising ? 196 : 262, start);
+    o.frequency.linearRampToValueAtTime(rising ? 262 : 196, start + length);
+    o.connect(g);
+    g.connect(c.destination);
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(0.028, start + length * 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + length);
+    o.start(start);
+    o.stop(start + length + 0.02);
+    nodes.current.add(o);
+    o.onended = () => {
+      nodes.current.delete(o);
+      o.disconnect();
+      g.disconnect();
+    };
   }
   async function playKey(midi: number) {
     stopWarmup();
@@ -966,7 +1026,12 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setTarget(null);
   }
   function startRoutine(id: RoutineId) {
-    const routine = routineById(id);
+    const base = routineById(id);
+    // Fold in what we know about this voice; an empty profile changes nothing.
+    const routine = {
+      ...base,
+      steps: personalizeSteps(base.steps, profileRef.current),
+    };
     setRoutineId(id);
     setDayDone(false);
     const first = routine.steps[0];
@@ -978,6 +1043,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
       logged: 0,
     });
     if (needsMic(first)) void startListening();
+    else void audioContext();
     requestAnimationFrame(() =>
       dailyPanel.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
     );
@@ -1080,6 +1146,10 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     setSyncedAt(null);
     setSyncStage('email');
     setSyncNote('');
+    // The routine returns to its generic wording when nobody is signed in.
+    profileRef.current = emptyProfile();
+    setProfile(emptyProfile());
+    setProfileOpen(false);
   }
   const syncLatest = useRef(syncPractice);
   useEffect(() => {
@@ -1111,6 +1181,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
       setAccount(data.session.user.email ?? 'signed in');
       if (fromLink) setSyncOpen(true);
       void syncLatest.current();
+      void profileLatest.current();
     })();
   }, []);
   // Practice keeps being logged while a routine runs, so pushes are debounced
@@ -1120,6 +1191,95 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
     const timer = setTimeout(() => void syncLatest.current(), 4000);
     return () => clearTimeout(timer);
   }, [account, daily.updated]);
+  const playingStep =
+    run && run.playing ? `${run.routine.id}:${run.index}` : null;
+  const breathCue = useRef(breathTone);
+  useEffect(() => {
+    breathCue.current = breathTone;
+  });
+  /**
+   * Sound the breath cue on the step's own cadence. The pacer ring restarts its
+   * animation whenever the step or the paused state changes, and so does this,
+   * which is what keeps the swell and the ring in step with each other.
+   */
+  useEffect(() => {
+    const active = runRef.current;
+    const step = active ? active.routine.steps[active.index] : null;
+    if (!playingStep || !breathSound || step?.engine !== 'breath' || !step.breath)
+      return;
+    const [inhale, hold, exhale] = step.breath;
+    const pending: ReturnType<typeof setTimeout>[] = [];
+    const cycle = () => {
+      breathCue.current(true);
+      pending.push(
+        setTimeout(() => breathCue.current(false), (inhale + hold) * 1000),
+      );
+    };
+    cycle();
+    const timer = setInterval(cycle, (inhale + hold + exhale) * 1000);
+    return () => {
+      clearInterval(timer);
+      pending.forEach(clearTimeout);
+    };
+  }, [playingStep, breathSound]);
+  function dismissOnboarding() {
+    setOnboarding(false);
+    try {
+      localStorage.setItem(ONBOARDING_KEY, markOnboarded());
+    } catch {}
+  }
+  // Introduce the app only to somebody who has never practised here.
+  useEffect(() => {
+    let stored: string | null = 'seen';
+    try {
+      stored = localStorage.getItem(ONBOARDING_KEY);
+    } catch {}
+    const practised = Object.keys(dailyRef.current.days).length > 0;
+    if (shouldOnboard(stored, practised)) setOnboarding(true);
+  }, []);
+  /** Load the signed-in singer's profile, so the routine can speak to them. */
+  async function loadProfile() {
+    const client = await supabase();
+    if (!client) return;
+    const { data: userData } = await client.auth.getUser();
+    if (!userData.user) return;
+    const { data, error } = await client
+      .from(PROFILE_TABLE)
+      .select('low_note,high_note,break_low,break_high,songs,hard_line')
+      .maybeSingle();
+    if (error || !mounted.current) return;
+    const next = rowToProfile(data);
+    profileRef.current = next;
+    setProfile(next);
+  }
+  async function saveProfile(next: Profile) {
+    const client = await supabase();
+    if (!client) return;
+    const { data: userData } = await client.auth.getUser();
+    const user = userData.user;
+    if (!user) return;
+    setProfileSaving(true);
+    setProfileNote('');
+    const { error } = await client
+      .from(PROFILE_TABLE)
+      .upsert({ ...profileToRow(next), user_id: user.id }, { onConflict: 'user_id' });
+    if (!mounted.current) return;
+    setProfileSaving(false);
+    if (error) {
+      setProfileNote(authMessage(error));
+      return;
+    }
+    profileRef.current = next;
+    setProfile(next);
+    setProfileNote('Saved.');
+  }
+  function editProfile(change: Partial<Profile>) {
+    setProfile((old) => ({ ...old, ...change }));
+    setProfileNote('');
+  }
+  useEffect(() => {
+    profileLatest.current = loadProfile;
+  });
   // The tick below is created once, so it reaches goToStep through a ref that
   // every render refreshes rather than closing over the first one.
   const advance = useRef(goToStep);
@@ -1385,6 +1545,10 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
   const stepProgress = runStep
     ? (runStep.seconds - run!.left) / runStep.seconds
     : 0;
+  const plannedSteps = personalizeSteps(
+    routineById(routineId).steps,
+    profile,
+  );
   const breath = runStep?.breath ?? [3, 2, 9];
   const breathCycle = breath[0] + breath[1] + breath[2];
   const breathIn = ((breath[0] / breathCycle) * 100).toFixed(1);
@@ -1412,13 +1576,104 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
           : 'READY';
   return (
     <div className={`sing-app ${demo ? 'fs-demo' : ''}`}>
+      {onboarding && (
+        <dialog open className="fs-onboard" aria-label="Welcome to Singwell">
+          <div className="fs-onboard-card">
+            <span className="fs-brand fs-onboard-brand">
+              <AudioLines />
+              Singwell
+            </span>
+            <h1>Ten minutes a day beats an hour on Sunday.</h1>
+            <p className="fs-onboard-lede">
+              A guided vocal routine that runs on a clock, listens while you
+              sing, and remembers that you turned up.
+            </p>
+            <div className="fs-onboard-panels">
+              {PANELS.map((p, i) => (
+                <article
+                  key={p.id}
+                  className={i === panel ? 'fs-panel-on' : ''}
+                  aria-current={i === panel ? 'step' : undefined}
+                >
+                  <div className={`fs-art fs-art-${p.art}`} aria-hidden="true">
+                    {p.art === 'steps' && (
+                      <>
+                        <i className="fs-art-row fs-art-done" />
+                        <i className="fs-art-row" />
+                        <i className="fs-art-row" />
+                      </>
+                    )}
+                    {p.art === 'listen' && (
+                      <>
+                        <i className="fs-art-ring" />
+                        <span className="fs-art-bars">
+                          <i /><i /><i /><i />
+                        </span>
+                      </>
+                    )}
+                    {p.art === 'streak' && (
+                      <span className="fs-art-grid">
+                        {Array.from({ length: 14 }, (_, k) => (
+                          <i key={k} className={k % 5 === 3 ? '' : 'fs-art-lit'} />
+                        ))}
+                      </span>
+                    )}
+                  </div>
+                  <h2>{p.title}</h2>
+                  <p>{p.body}</p>
+                </article>
+              ))}
+            </div>
+            <div className="fs-onboard-foot">
+              <div className="fs-onboard-dots" aria-hidden="true">
+                {PANELS.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={i === panel ? 'fs-dot-on' : ''}
+                    onClick={() => setPanel(i)}
+                    aria-label={`Show ${p.title}`}
+                  />
+                ))}
+              </div>
+              {panel < PANELS.length - 1 ? (
+                <button
+                  type="button"
+                  className="fs-onboard-go"
+                  onClick={() => setPanel((n) => n + 1)}
+                >
+                  Next <ChevronRight size={17} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="fs-onboard-go"
+                  onClick={() => {
+                    dismissOnboarding();
+                    startRoutine(routineId);
+                  }}
+                >
+                  Start your first session <ChevronRight size={17} />
+                </button>
+              )}
+              <button
+                type="button"
+                className="fs-onboard-skip"
+                onClick={dismissOnboarding}
+              >
+                Look around first
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
       <header className="fs-header">
         <div>
           <span className="fs-brand">
             <AudioLines />
-            free sing<span className="fs-dot">.</span>
+            Singwell
           </span>
-          <span className="fs-free">Your voice never leaves your device</span>
+          <span className="fs-free">Ten minutes a day</span>
         </div>
         <div className="fs-header-actions">
           {onBack && (
@@ -1483,7 +1738,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
           >
-            <option value="system">System theme</option>
+            <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
           </select>
@@ -1631,6 +1886,181 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
         <h1>{introTitle}</h1>
         <p>{introText}</p>
       </div>
+      {mode === 'daily' && account && profileOpen && (
+        <section className="fs-voice" aria-label="Your voice">
+          <div className="fs-voice-head">
+            <div>
+              <h2>Your voice</h2>
+              <p>
+                What the routine knows about you. Saved to your account, used to
+                tailor the exercises, never shown to anyone else.
+              </p>
+            </div>
+            <button type="button" onClick={() => setProfileOpen(false)}>
+              <X size={15} /> Close
+            </button>
+          </div>
+
+          <div className="fs-voice-grid">
+            <label>
+              <span>Chest gives out at</span>
+              <select
+                value={profile.breakLow ?? ''}
+                onChange={(e) =>
+                  editProfile({
+                    breakLow: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Not sure yet</option>
+                {NOTE_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {noteName(n)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Head takes over at</span>
+              <select
+                value={profile.breakHigh ?? ''}
+                onChange={(e) =>
+                  editProfile({
+                    breakHigh: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Not sure yet</option>
+                {NOTE_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {noteName(n)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Lowest comfortable note</span>
+              <select
+                value={profile.low ?? ''}
+                onChange={(e) =>
+                  editProfile({
+                    low: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Not sure yet</option>
+                {NOTE_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {noteName(n)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Highest comfortable note</span>
+              <select
+                value={profile.high ?? ''}
+                onChange={(e) =>
+                  editProfile({
+                    high: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Not sure yet</option>
+                {NOTE_CHOICES.map((n) => (
+                  <option key={n} value={n}>
+                    {noteName(n)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {savedLow !== null && savedHigh !== null && (
+            <button
+              type="button"
+              className="fs-voice-adopt"
+              onClick={() => editProfile({ low: savedLow, high: savedHigh })}
+            >
+              Use the range already tracked: {noteName(savedLow)} to{' '}
+              {noteName(savedHigh)}
+            </button>
+          )}
+
+          <label className="fs-voice-line">
+            <span>The line you keep getting wrong</span>
+            <input
+              type="text"
+              maxLength={200}
+              placeholder="One phrase from a song you are working on"
+              value={profile.hardLine ?? ''}
+              onChange={(e) => editProfile({ hardLine: e.target.value || null })}
+            />
+          </label>
+
+          <div className="fs-voice-songs">
+            <span>Songs you are working on</span>
+            <div className="fs-song-tags">
+              {profile.songs.map((song) => (
+                <span key={song}>
+                  {song}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      editProfile({
+                        songs: profile.songs.filter((x) => x !== song),
+                      })
+                    }
+                    aria-label={`Remove ${song}`}
+                  >
+                    <X size={13} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const field = new FormData(e.currentTarget).get('song');
+                const next = typeof field === 'string' ? field.trim() : '';
+                if (!next || profile.songs.includes(next) || profile.songs.length >= 12)
+                  return;
+                editProfile({ songs: [...profile.songs, next] });
+                e.currentTarget.reset();
+              }}
+            >
+              <input
+                name="song"
+                type="text"
+                maxLength={80}
+                placeholder="Add a song"
+                aria-label="Add a song"
+              />
+              <button type="submit">Add</button>
+            </form>
+          </div>
+
+          <div className="fs-voice-foot">
+            <small>
+              {profileIsEmpty(profile)
+                ? 'With nothing filled in, every step keeps its general wording.'
+                : 'The bridge and song steps will use these.'}
+            </small>
+            <div>
+              {profileNote && <em aria-live="polite">{profileNote}</em>}
+              <button
+                type="button"
+                className="fs-voice-save"
+                disabled={profileSaving}
+                onClick={() => void saveProfile(profile)}
+              >
+                {profileSaving ? <Loader size={15} /> : <Check size={15} />}
+                {profileSaving ? 'Saving' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
       {mode === 'daily' && (
         <section
           ref={dailyPanel}
@@ -1692,7 +2122,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                     >
                       {/* Keyframe stops follow the step's own in/hold/out split,
                           so changing the tuple cannot silently desync the ring. */}
-                      <style>{`@keyframes fs-breathe-live{0%{transform:scale(.45)}${breathIn}%{transform:scale(1)}${breathHold}%{transform:scale(1)}100%{transform:scale(.45)}}`}</style>
+                      <style>{`@keyframes fs-breathe-live{0%{transform:scale(.45)}${breathIn}%{transform:scale(1)}${breathHold}%{transform:scale(1)}100%{transform:scale(.45)}}@keyframes fs-halo{0%{opacity:.08;transform:scale(.45) translateY(-18px)}${breathIn}%{opacity:.22;transform:scale(1.18) translateY(-18px)}${breathHold}%{opacity:.22;transform:scale(1.18) translateY(-18px)}100%{opacity:.08;transform:scale(.45) translateY(-18px)}}`}</style>
                       <i aria-hidden="true" />
                       <span>
                         <Wind size={16} aria-hidden="true" /> in{' '}
@@ -1700,6 +2130,15 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                         {runStep.breath[2]}
                       </span>
                       <small>{formatTime(run.left)} left</small>
+                      <button
+                        type="button"
+                        className="fs-breath-mute"
+                        aria-pressed={breathSound}
+                        onClick={() => setBreathSound((on) => !on)}
+                      >
+                        {breathSound ? <Volume2 size={14} /> : <X size={14} />}
+                        {breathSound ? 'Sound on' : 'Silent'}
+                      </button>
                     </div>
                   ) : (
                     <div className="fs-step-clock" aria-live="off">
@@ -1824,7 +2263,7 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
               </div>
               <div className="fs-plan">
                 <ol>
-                  {routineById(routineId).steps.map((step, i) => (
+                  {plannedSteps.map((step, i) => (
                     <li key={stepKey(step, i)}>
                       <span className="fs-plan-title">{step.title}</span>
                       <span className="fs-plan-cue">{step.cue}</span>
@@ -1847,6 +2286,18 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                   The microphone turns on only for the steps that show your
                   pitch.
                 </p>
+                {account && !profileOpen && (
+                  <button
+                    type="button"
+                    className="fs-voice-open"
+                    onClick={() => setProfileOpen(true)}
+                  >
+                    <Sparkles size={14} />
+                    {profileIsEmpty(profile)
+                      ? 'Tell it about your voice'
+                      : 'Your voice'}
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1888,8 +2339,17 @@ export default function FreeSing({ onBack }: { onBack?: () => void }) {
                       ? 'Simulated input'
                       : 'At your own pace'}
               </p>
-              <div className="fs-level">
-                <i style={{ width: `${level * 100}%` }} />
+              <div
+                className={inputActive ? 'fs-meter fs-meter-on' : 'fs-meter'}
+                aria-hidden="true"
+              >
+                {levels.map((v, i) => (
+                  <i
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={i}
+                    style={{ transform: `scaleY(${0.08 + v * 0.92})` }}
+                  />
+                ))}
               </div>
             </div>
           </div>
