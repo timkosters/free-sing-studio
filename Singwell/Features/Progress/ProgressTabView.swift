@@ -139,7 +139,10 @@ struct ProgressTabView: View {
 
 /// Horizontal C2–C6 scale with session and all-time bars.
 struct RangeMap: View {
-    var sessionLow: Int?, sessionHigh: Int?, allLow: Int?, allHigh: Int?
+    var sessionLow: Int?
+    var sessionHigh: Int?
+    var allLow: Int?
+    var allHigh: Int?
     private let low = Double(Quest.lowest) - 0.5
     private let span = Double(Quest.highest - Quest.lowest + 1)
 
@@ -176,7 +179,9 @@ struct RangeMap: View {
 
 /// The image people post. Brand colors, big notes, no judgment.
 struct RangeShareCard: View {
-    var low: Int?, high: Int?, streak: Int
+    var low: Int?
+    var high: Int?
+    var streak: Int
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(red: 0.16, green: 0.09, blue: 0.32), Color(red: 0.44, green: 0.28, blue: 0.78)], startPoint: .topLeading, endPoint: .bottomTrailing)
