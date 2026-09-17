@@ -49,13 +49,16 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { session.stopEverything() }
+            if phase == .active, auth.state.isAuthenticated { Task { await progress.sync() } }
         }
+        .onOpenURL { url in auth.handleOpen(url) }
         .task {
             session.attach(progress: progress, library: library, settings: settings)
+            auth.onSignedIn = { [progress] user in progress.connect(userID: user.id) }
+            if let user = auth.state.profile { progress.connect(userID: user.id) }
             applyLaunchArguments()
             Haptics.enabled = settings.hapticsEnabled
             await store.load()
-            await auth.refreshCredentialState()
         }
     }
 }

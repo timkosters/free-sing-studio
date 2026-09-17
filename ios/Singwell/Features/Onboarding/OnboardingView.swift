@@ -20,8 +20,8 @@ struct OnboardingView: View {
                 ForEach(Array(pages.enumerated()), id: \.offset) { i, p in
                     VStack(spacing: 18) {
                         Image(systemName: p.icon).font(.system(size: 72)).foregroundStyle(Color.voice)
-                        Text(p.title).font(.largeTitle.weight(.bold)).multilineTextAlignment(.center)
-                        Text(p.text).font(.body).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
+                        Text(p.title).font(.display(.largeTitle)).multilineTextAlignment(.center)
+                        Text(p.text).font(.sora(.body)).foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
                     }
                     .tag(i)
                     .padding(.bottom, 40)
@@ -44,7 +44,7 @@ struct OnboardingView: View {
     private var finalPage: some View {
         VStack(spacing: 18) {
             Image(systemName: "mic.fill").font(.system(size: 64)).foregroundStyle(Color.voice)
-            Text("Your voice stays yours").font(.largeTitle.weight(.bold)).multilineTextAlignment(.center)
+            Text("Your voice stays yours").font(.display(.largeTitle)).multilineTextAlignment(.center)
             Text("Singwell needs the microphone to hear your pitch. Nothing is uploaded, ever.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center).padding(.horizontal, 24)
             if micGranted == nil {
@@ -52,24 +52,24 @@ struct OnboardingView: View {
                     Label("Allow microphone", systemImage: "mic").bold().frame(maxWidth: .infinity)
                 }.buttonStyle(.borderedProminent).tint(.voice).controlSize(.large)
             } else if micGranted == false {
-                Text("Microphone access was declined. You can turn it on later in Settings › Singwell.").font(.footnote).foregroundStyle(.orange).multilineTextAlignment(.center)
+                Text("Microphone access was declined. You can turn it on later in Settings › Singwell.").font(.sora(.footnote)).foregroundStyle(.orange).multilineTextAlignment(.center)
             } else {
                 Label("Microphone ready", systemImage: "checkmark.circle.fill").foregroundStyle(Color.singGreen)
             }
             VStack(spacing: 10) {
-                SignInWithAppleButton(.continue, onRequest: { auth.configure($0) }, onCompletion: { result in
-                    auth.handle(result)
-                    if auth.state.isAuthenticated { settings.onboarded = true }
-                })
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
+                SignInWithAppleButton(.continue, onRequest: { auth.configure($0) }, onCompletion: { auth.handle($0) })
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 50)
+                Text("Same account as singwell on the web: one streak, one profile, everywhere.")
+                    .font(.sora(.caption)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 Button("Continue without an account") { auth.continueAsGuest(); settings.onboarded = true }
-                    .font(.subheadline)
-                if let e = auth.lastError { Text(e).font(.caption).foregroundStyle(.red) }
+                    .font(.sora(.subheadline))
+                if let e = auth.lastError { Text(e).font(.sora(.caption)).foregroundStyle(.red) }
             }
             .padding(.top, 8)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 40)
+        .onChange(of: auth.state) { _, new in if new.isAuthenticated { settings.onboarded = true } }
     }
 }

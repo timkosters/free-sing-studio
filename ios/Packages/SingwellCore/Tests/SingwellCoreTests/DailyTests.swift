@@ -13,8 +13,9 @@ final class DailyTests: XCTestCase {
             }
             XCTAssertTrue(routine.seconds >= 8 * 60 && routine.seconds <= 25 * 60, routine.id.rawValue)
         }
-        XCTAssertEqual(Daily.routine(.quick).lengthLabel, "10 min")
+        XCTAssertEqual(Daily.routine(.quick).lengthLabel, "11 min")
         XCTAssertEqual(Daily.stepKey(Daily.routines[2].steps[7], index: 7), "7:bridge")
+        XCTAssertEqual(Daily.routine(.full).steps.map { $0.id }, ["wake", "belly", "ladder", "twisters", "siren", "goo", "oo", "bridge", "hard-line", "noi", "song"])
     }
 
     func testDayKeysShift() {

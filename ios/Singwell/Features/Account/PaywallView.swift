@@ -23,14 +23,14 @@ struct PaywallView: View {
                 VStack(spacing: 20) {
                     VStack(spacing: 8) {
                         Image(systemName: "waveform.badge.plus").font(.system(size: 48)).foregroundStyle(Color.voice)
-                        Text("Singwell Pro").font(.largeTitle.weight(.bold))
-                        Text(reason).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                        Text("Singwell Pro").font(.display(.largeTitle))
+                        Text(reason).font(.sora(.subheadline)).foregroundStyle(.secondary).multilineTextAlignment(.center)
                     }
                     VStack(alignment: .leading, spacing: 10) {
                         ForEach(Array(benefits.enumerated()), id: \.offset) { _, b in
                             HStack(spacing: 12) {
                                 Image(systemName: b.0).foregroundStyle(Color.voice).frame(width: 24)
-                                Text(b.1).font(.subheadline)
+                                Text(b.1).font(.sora(.subheadline))
                             }
                         }
                     }
@@ -40,7 +40,7 @@ struct PaywallView: View {
                     if store.products.isEmpty {
                         if store.loading { ProgressView().padding() }
                         else if let e = store.lastError { ErrorBanner(message: e) { store.lastError = nil } }
-                        else { Text("Plans are loading…").font(.footnote).foregroundStyle(.secondary) }
+                        else { Text("Plans are loading…").font(.sora(.footnote)).foregroundStyle(.secondary) }
                     } else {
                         VStack(spacing: 10) {
                             ForEach(store.products, id: \.id) { p in planRow(p) }
@@ -64,14 +64,14 @@ struct PaywallView: View {
                     .buttonStyle(.borderedProminent).tint(.voice).controlSize(.large)
                     .disabled(purchasing || store.product(selected) == nil)
 
-                    Button("Restore purchases") { Task { await store.restore(); if store.isPro { dismiss() } } }.font(.footnote)
+                    Button("Restore purchases") { Task { await store.restore(); if store.isPro { dismiss() } } }.font(.sora(.footnote))
 
                     Text("Subscriptions renew automatically until cancelled in Settings › Apple ID › Subscriptions. The free week applies to your first subscription only. Lifetime is a one-time purchase.")
-                        .font(.caption2).foregroundStyle(.tertiary).multilineTextAlignment(.center)
+                        .font(.sora(.caption2)).foregroundStyle(.tertiary).multilineTextAlignment(.center)
                     HStack(spacing: 16) {
                         Link("Privacy", destination: Legal.privacy)
                         Link("Terms", destination: Legal.terms)
-                    }.font(.caption)
+                    }.font(.sora(.caption))
                 }
                 .padding(20)
             }
@@ -101,13 +101,13 @@ struct PaywallView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(planTitle(p)).font(.headline)
-                        if p.id == ProductID.yearly { Text("Best value").font(.caption2.weight(.bold)).padding(.horizontal, 6).padding(.vertical, 2).background(Color.singGreen.opacity(0.15), in: Capsule()).foregroundStyle(Color.singGreen) }
+                        Text(planTitle(p)).font(.sora(.headline, .semibold))
+                        if p.id == ProductID.yearly { Text("Best value").font(.sora(.caption2, .bold)).padding(.horizontal, 6).padding(.vertical, 2).background(Color.singGreen.opacity(0.15), in: Capsule()).foregroundStyle(Color.singGreen) }
                     }
-                    Text(planSubtitle(p)).font(.caption).foregroundStyle(.secondary)
+                    Text(planSubtitle(p)).font(.sora(.caption)).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(p.displayPrice + periodSuffix(p)).font(.subheadline.weight(.semibold)).monospacedDigit()
+                Text(p.displayPrice + periodSuffix(p)).font(.sora(.subheadline, .semibold)).monospacedDigit()
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle").foregroundStyle(isSelected ? Color.voice : .secondary)
             }
             .padding(14)

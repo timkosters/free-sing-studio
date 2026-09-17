@@ -32,9 +32,9 @@ struct PianoRollView: View {
                 onKeyTap(midi(atY: location.y, height: geo.size.height))
             }
         }
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .background(Color.plot)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.hairline))
         .onChange(of: currentMidi) { _, new in
             if let new, follow { withAnimation(.easeOut(duration: 0.35)) { center = new } }
         }
@@ -77,15 +77,20 @@ struct PianoRollView: View {
             let black = Pitch.isBlackKey(note)
             let laneColor: Color = black ? Color.primary.opacity(scheme == .dark ? 0.06 : 0.045) : Color.clear
             context.fill(Path(rect), with: .color(laneColor))
+            if let current = currentMidi, Int(current.rounded()) == note {
+                context.fill(Path(CGRect(x: keyWidth, y: top, width: size.width - keyWidth, height: laneHeight)), with: .color((demo ? Color.demoViolet : Color.voice).opacity(0.14)))
+            }
             let keyRect = CGRect(x: 0, y: top, width: keyWidth, height: laneHeight)
-            var keyColor: Color = black ? (scheme == .dark ? Color.white.opacity(0.12) : Color.black.opacity(0.75)) : (scheme == .dark ? Color.white.opacity(0.9) : Color.white)
-            if playedNote == note { keyColor = .voice }
-            if let target, target == note { keyColor = .singGreen.opacity(0.85) }
+            let accent: Color = demo ? .demoViolet : .voice
+            var keyColor: Color = black ? Color.ink : Color.cardBackground
+            if let current = currentMidi, Int(current.rounded()) == note { keyColor = accent.opacity(0.85) }
+            if playedNote == note { keyColor = accent }
+            if let target, target == note { keyColor = .warmAmber.opacity(0.85) }
             context.fill(Path(roundedRect: keyRect.insetBy(dx: 2, dy: 0.5), cornerRadius: 3), with: .color(keyColor))
             if note % 12 == 0 || laneHeight >= 13 {
                 let label = Text(Pitch.noteName(Double(note)))
                     .font(.system(size: min(11, max(7, laneHeight * 0.7)), weight: note % 12 == 0 ? .bold : .regular, design: .rounded))
-                    .foregroundColor(black ? (scheme == .dark ? .white : .white) : (scheme == .dark ? .black : .black))
+                    .foregroundColor(black || (currentMidi.map { Int($0.rounded()) == note } ?? false) || playedNote == note || target == note ? (scheme == .dark && !black ? .black : .white) : (scheme == .dark ? .white : .black))
                 context.draw(label, at: CGPoint(x: keyWidth / 2, y: top + laneHeight / 2), anchor: .center)
             }
             if note % 12 == 0 {
@@ -117,9 +122,9 @@ struct PianoRollView: View {
         if let target {
             let ty = y(for: Double(target), height: size.height, bounds: b)
             var live = Path(); live.move(to: CGPoint(x: plotX, y: ty)); live.addLine(to: CGPoint(x: size.width, y: ty))
-            context.stroke(live, with: .color(Color.singGreen.opacity(0.35)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            context.stroke(live, with: .color(Color.warmAmber.opacity(0.45)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
         }
-        context.stroke(targetPath, with: .color(Color.singGreen.opacity(0.75)), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, dash: [6, 5]))
+        context.stroke(targetPath, with: .color(Color.warmAmber.opacity(0.9)), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 5]))
 
         // Pitch trail
         var trail = Path()
@@ -130,7 +135,7 @@ struct PianoRollView: View {
             if let prev = previous, prev.midi != nil, f.t - prev.t < 0.3 { trail.addLine(to: p) } else { trail.move(to: p) }
             previous = f
         }
-        let trailColor: Color = demo ? .voiceSoft : .voice
+        let trailColor: Color = demo ? .demoViolet : .voice
         context.stroke(trail, with: .color(trailColor.opacity(0.25)), style: StrokeStyle(lineWidth: 9, lineCap: .round, lineJoin: .round))
         context.stroke(trail, with: .color(trailColor), style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
 

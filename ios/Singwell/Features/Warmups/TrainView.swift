@@ -49,9 +49,9 @@ struct WarmupsView: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Warm up, gently.").font(.title2.weight(.bold))
+                Text("Warm up, gently.").font(.display(.title2))
                 Text("Listen to the piano, then sing it back. Use headphones so the microphone hears only you.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.sora(.subheadline)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -72,7 +72,7 @@ struct WarmupsView: View {
         VStack(spacing: 12) {
             HStack {
                 LiveDot(color: session.warmLive?.beat.phase == .sing ? .singGreen : .listenBlue)
-                Text(session.warmLabel).font(.subheadline.weight(.semibold))
+                Text(session.warmLabel).font(.sora(.subheadline, .semibold))
                 Spacer()
             }
             PianoRollView(frames: session.frames, now: session.now, window: 8, currentMidi: session.pitch, target: session.target,
@@ -90,14 +90,14 @@ struct WarmupsView: View {
         let root = current.beat.root
         return VStack(alignment: .leading, spacing: 6) {
             Text(current.beat.phase == .sing ? "YOUR TURN" : current.beat.phase == .listen ? "LISTEN" : current.beat.phase == .count ? "COUNT-IN" : "BREATHE")
-                .font(.caption2.weight(.bold)).foregroundStyle(current.beat.phase == .sing ? Color.singGreen : Color.listenBlue)
+                .font(.sora(.caption2, .bold)).foregroundStyle(current.beat.phase == .sing ? Color.singGreen : Color.listenBlue)
             HStack(spacing: 5) {
                 ForEach(Array(pattern.enumerated()), id: \.offset) { i, offset in
                     let key = "\(round)-\(i)"
                     let verdict = Warmup.verdict(session.scores[key])
                     let active = current.beat.noteIndex == i && (current.beat.phase == .sing || current.beat.phase == .listen)
                     VStack(spacing: 2) {
-                        Text(Pitch.noteName(Double(root + offset))).font(.caption.weight(.semibold))
+                        Text(Pitch.noteName(Double(root + offset))).font(.sora(.caption, .semibold))
                         Text(session.scores[key] == nil ? " " : verdict.rawValue).font(.system(size: 8)).foregroundStyle(.secondary).lineLimit(1)
                     }
                     .frame(maxWidth: .infinity)
@@ -147,12 +147,12 @@ struct WarmupsView: View {
 
     private func resultsCard(finalRound: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Last warm-up").font(.headline)
+            Text("Last warm-up").font(.sora(.headline, .semibold))
             let hits = session.scores.values.filter { Warmup.verdict($0) == .hit }.count
             let scored = session.scores.values.filter { Warmup.verdict($0) != .none }.count
-            Text("\(hits) of \(scored) sung notes landed within 50 cents.").font(.subheadline).foregroundStyle(.secondary)
+            Text("\(hits) of \(scored) sung notes landed within 50 cents.").font(.sora(.subheadline)).foregroundStyle(.secondary)
             Text("Hit means at least half your samples on a note were in tune. Low and High say which way to lean next time.")
-                .font(.caption).foregroundStyle(.tertiary)
+                .font(.sora(.caption)).foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
@@ -178,9 +178,9 @@ struct QuestView: View {
     var body: some View {
         VStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Pitch Quest.").font(.title2.weight(.bold))
+                Text("Pitch Quest.").font(.display(.title2))
                 Text("One target at a time. Match it within 50 cents and hold for a second. Targets never leap more than five semitones.")
-                    .font(.subheadline).foregroundStyle(.secondary)
+                    .font(.sora(.subheadline)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -217,7 +217,7 @@ struct QuestView: View {
     private func liveCard(_ q: QuestState) -> some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Target \(q.run.index + 1) of \(q.run.targets.count)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Target \(q.run.index + 1) of \(q.run.targets.count)").font(.sora(.caption, .semibold)).foregroundStyle(.secondary)
                 Spacer()
                 HStack(spacing: 3) {
                     ForEach(Array(q.run.outcomes.enumerated()), id: \.offset) { _, o in
@@ -232,9 +232,9 @@ struct QuestView: View {
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 0.08), value: q.run.hold)
                 VStack(spacing: 4) {
-                    Text("SING").font(.caption2.weight(.bold)).foregroundStyle(.secondary)
-                    Text(q.run.current.map { Pitch.noteName(Double($0)) } ?? "—").font(.system(size: 52, weight: .bold, design: .rounded))
-                    Text(youLabel).font(.footnote).foregroundStyle(.secondary)
+                    Text("SING").font(.sora(.caption2, .bold)).foregroundStyle(.secondary)
+                    Text(q.run.current.map { Pitch.noteName(Double($0)) } ?? "—").font(.display(size: 52))
+                    Text(youLabel).font(.sora(.footnote)).foregroundStyle(.secondary)
                 }
             }
             .frame(width: 190, height: 190)
@@ -261,13 +261,13 @@ struct QuestView: View {
     private func summaryCard(_ q: QuestState, _ s: Quest.Summary) -> some View {
         VStack(spacing: 12) {
             Image(systemName: s.complete ? "checkmark.seal.fill" : "target").font(.system(size: 44)).foregroundStyle(s.complete ? Color.singGreen : Color.voice)
-            Text(Quest.verdict(s)).font(.title3.weight(.semibold))
+            Text(Quest.verdict(s)).font(.display(.title3))
             HStack {
                 StatTile(label: "Matched", value: "\(s.matched)/\(s.total)")
                 StatTile(label: "Avg per note", value: s.averageSeconds.map { String(format: "%.1f", $0) } ?? "—", unit: "s")
                 StatTile(label: "Covered", value: (s.low != nil && s.high != nil) ? "\(Pitch.noteName(Double(s.low!)))–\(Pitch.noteName(Double(s.high!)))" : "—")
             }
-            if q.synthetic { Text("Demo voice: not saved to your history.").font(.caption).foregroundStyle(.secondary) }
+            if q.synthetic { Text("Demo voice: not saved to your history.").font(.sora(.caption)).foregroundStyle(.secondary) }
             HStack {
                 Button("Again") { Task { await session.startQuest(low: settings.questLow, high: settings.questHigh, count: settings.questCount) } }
                     .buttonStyle(.borderedProminent).tint(.voice)

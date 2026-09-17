@@ -507,7 +507,7 @@ final class PracticeSession {
         stopRoutine(logPartial: true)
         if warm != nil { stopWarmup() }
         if quest != nil { endQuest() }
-        let routine = Daily.routine(id)
+        let routine = progress?.routine(id) ?? Daily.routine(id)
         dayDone = false
         dailyRun = DailyRun(routine: routine, index: 0, left: routine.steps[0].seconds, playing: true, logged: 0)
         await prepareStep()

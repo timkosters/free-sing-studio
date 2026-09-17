@@ -49,15 +49,15 @@ struct DailyView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
                 Image(systemName: "flame.fill").foregroundStyle(progress.streak > 0 ? .orange : .secondary)
-                Text("\(progress.streak) day streak").font(.title3.weight(.semibold))
+                Text("\(progress.streak) day streak").font(.display(.title2))
                 Spacer()
-                Text(progress.practisedToday ? "Practised today" : "Not yet today").font(.caption).foregroundStyle(.secondary)
+                Text(progress.practisedToday ? "Practised today" : "Not yet today").font(.sora(.caption)).foregroundStyle(.secondary)
             }
             StreakStrip(log: progress.daily, days: 14)
             HStack {
-                Text("Best \(progress.daily.bestStreak) days").font(.caption).foregroundStyle(.secondary)
+                Text("Best \(progress.daily.bestStreak) days").font(.sora(.caption)).foregroundStyle(.secondary)
                 Spacer()
-                Text("\(progress.daily.totalDays) days · \(Formatting.minutes(progress.daily.totalSeconds)) of routine").font(.caption).foregroundStyle(.secondary)
+                Text("\(progress.daily.totalDays) days · \(Formatting.minutes(progress.daily.totalSeconds)) of routine").font(.sora(.caption)).foregroundStyle(.secondary)
             }
         }
         .card()
@@ -65,9 +65,9 @@ struct DailyView: View {
 
     private var routinePicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ten minutes. Every day.").font(.title2.weight(.bold))
+            Text("Ten minutes. Every day.").font(.display(.title2))
             Text("A guided routine, one step at a time, on a clock. Pick a length and press start.")
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(.sora(.subheadline)).foregroundStyle(.secondary)
             ForEach(Daily.routines) { routine in
                 let locked = !Entitlements.canUseRoutine(routine.id.rawValue, pro: store.isPro)
                 Button {
@@ -79,16 +79,16 @@ struct DailyView: View {
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 8) {
-                                Text(routine.label).font(.headline)
-                                Text(routine.lengthLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                                Text(routine.label).font(.display(.title3))
+                                Text(routine.lengthLabel).font(.sora(.caption, .semibold)).foregroundStyle(.secondary)
                                 if locked { ProBadge() }
                             }
-                            Text(routine.blurb).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-                            Text(routine.steps.map { $0.title }.joined(separator: " · ")).font(.caption2).foregroundStyle(.tertiary).lineLimit(2).multilineTextAlignment(.leading)
+                            Text(routine.blurb).font(.sora(.subheadline)).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                            Text(routine.steps.map { $0.title }.joined(separator: " · ")).font(.sora(.caption2)).foregroundStyle(.tertiary).lineLimit(2).multilineTextAlignment(.leading)
                         }
                         Spacer()
                         Image(systemName: locked ? "lock.fill" : "play.fill")
-                            .font(.title3)
+                            .font(.display(.title3))
                             .foregroundStyle(locked ? Color.secondary : Color.voice)
                     }
                     .padding(14)
@@ -102,7 +102,7 @@ struct DailyView: View {
     private var dayDoneCard: some View {
         VStack(spacing: 14) {
             Image(systemName: "checkmark.seal.fill").font(.system(size: 52)).foregroundStyle(Color.singGreen)
-            Text("Routine complete").font(.title2.weight(.bold))
+            Text("Routine complete").font(.display(.title2))
             Text("\(progress.streak) day streak. See you tomorrow.").foregroundStyle(.secondary)
             StreakStrip(log: progress.daily, days: 14)
             HStack {
@@ -148,22 +148,22 @@ struct RoutineRunnerView: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Text(run.routine.label).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text(run.routine.label).font(.sora(.caption, .semibold)).foregroundStyle(.secondary)
                 Spacer()
-                Text("Step \(run.index + 1) of \(run.routine.steps.count)").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("Step \(run.index + 1) of \(run.routine.steps.count)").font(.sora(.caption, .semibold)).foregroundStyle(.secondary)
             }
             ProgressView(value: Double(run.index) + (1 - run.left / run.step.seconds), total: Double(run.routine.steps.count))
                 .tint(.voice)
             VStack(alignment: .leading, spacing: 6) {
-                Text(run.step.title).font(.title2.weight(.bold))
-                Text(run.step.cue).font(.body.weight(.medium))
+                Text(run.step.title).font(.display(.title2))
+                Text(run.step.cue).font(.sora(.body, .medium))
                 ForEach(run.step.detail, id: \.self) { line in
                     HStack(alignment: .top, spacing: 8) {
                         Circle().fill(Color.voice.opacity(0.6)).frame(width: 5, height: 5).padding(.top, 7)
-                        Text(line).font(.subheadline).foregroundStyle(.secondary)
+                        Text(line).font(.sora(.subheadline)).foregroundStyle(.secondary)
                     }
                 }
-                Text(run.step.why).font(.caption).italic().foregroundStyle(.tertiary).padding(.top, 2)
+                Text(run.step.why).font(.sora(.caption)).italic().foregroundStyle(.tertiary).padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
@@ -172,14 +172,14 @@ struct RoutineRunnerView: View {
                 .frame(height: 240)
 
             HStack {
-                Text(Formatting.clock(run.left)).font(.system(size: 44, weight: .semibold, design: .rounded)).monospacedDigit()
+                Text(Formatting.clock(run.left)).font(.display(size: 44)).monospacedDigit()
                 Spacer()
                 if run.step.needsMic, !session.demo {
                     Button {
                         if session.recording { session.finishRecording() }
                         else if Entitlements.canSaveTake(count: library.takes.count, pro: store.isPro) { Task { await session.startRecording(context: .daily) } }
                     } label: {
-                        Image(systemName: session.recording ? "stop.circle.fill" : "record.circle").font(.title)
+                        Image(systemName: session.recording ? "stop.circle.fill" : "record.circle").font(.display(.title))
                     }.tint(session.recording ? .red : .voice)
                 }
             }
@@ -207,7 +207,7 @@ struct RoutineRunnerView: View {
         case .none:
             VStack(spacing: 10) {
                 Image(systemName: "figure.mind.and.body").font(.system(size: 44)).foregroundStyle(Color.voice)
-                Text("No microphone for this one. Follow the cue and breathe.").font(.footnote).foregroundStyle(.secondary)
+                Text("No microphone for this one. Follow the cue and breathe.").font(.sora(.footnote)).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .card()
@@ -256,12 +256,12 @@ struct BreathPacer: View {
                 Circle().fill(Color.voice.opacity(0.18)).scaleEffect(p.scale)
                     .animation(.linear(duration: 0.25), value: p.scale)
                 VStack(spacing: 2) {
-                    Text(p.label).font(.title3.weight(.semibold))
-                    Text("\(Int(p.remaining.rounded(.up)))").font(.system(.largeTitle, design: .rounded).weight(.bold)).monospacedDigit()
+                    Text(p.label).font(.display(.title3))
+                    Text("\(Int(p.remaining.rounded(.up)))").font(.display(.largeTitle)).monospacedDigit()
                 }
             }
             .frame(width: 150, height: 150)
-            Text("In \(Int(cycle.0)) · hold \(Int(cycle.1)) · out \(Int(cycle.2))").font(.caption).foregroundStyle(.secondary)
+            Text("In \(Int(cycle.0)) · hold \(Int(cycle.1)) · out \(Int(cycle.2))").font(.sora(.caption)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -19,6 +19,9 @@ settings:
 packages:
   SingwellCore:
     path: Packages/SingwellCore
+  Supabase:
+    url: https://github.com/supabase/supabase-swift.git
+    from: 2.20.0
 targets:
   Singwell:
     type: application
@@ -27,8 +30,11 @@ targets:
       - path: Singwell
         excludes:
           - "**/*.md"
+          - "**/OFL-*.txt"
     dependencies:
       - package: SingwellCore
+      - package: Supabase
+        product: Supabase
     entitlements:
       path: Singwell/Resources/Singwell.entitlements
       properties:
@@ -56,6 +62,19 @@ targets:
         UIRequiresFullScreen: false
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+        UIAppFonts:
+          - Fraunces-Light.ttf
+          - Fraunces-Regular.ttf
+          - Fraunces-Medium.ttf
+          - Sora-Regular.ttf
+          - Sora-Medium.ttf
+          - Sora-SemiBold.ttf
+        CFBundleURLTypes:
+          - CFBundleURLName: live.singwell.app
+            CFBundleURLSchemes: [singwell]
+        # Shared backend with the web app (same Supabase project, same tables, same accounts).
+        SupabaseURL: https://acfhkglxhnpvxcinmgss.supabase.co
+        SupabaseAnonKey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjZmhrZ2x4aG5wdnhjaW5tZ3NzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1OTY0NzMsImV4cCI6MjEwNTE3MjQ3M30.RKtEWQ4KpMO5fygNvl0FEKcdp4q6eqrarpkhIXK9zJk
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: live.singwell.app

@@ -24,7 +24,7 @@ struct ProgressTabView: View {
                     }
                     .buttonStyle(.bordered)
                     Text("Only notes held for half a second count toward your range. Everything on this page stays on your device.")
-                        .font(.caption).foregroundStyle(.tertiary).multilineTextAlignment(.center)
+                        .font(.sora(.caption)).foregroundStyle(.tertiary).multilineTextAlignment(.center)
                 }
                 .padding(16)
             }
@@ -49,7 +49,7 @@ struct ProgressTabView: View {
 
     private var rangeCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Your range").font(.headline)
+            Text("Your range").font(.sora(.headline, .semibold))
             RangeMap(sessionLow: session.sessionLow, sessionHigh: session.sessionHigh, allLow: progress.history.low, allHigh: progress.history.high)
                 .frame(height: 74)
             HStack {
@@ -70,20 +70,20 @@ struct ProgressTabView: View {
 
     private func rangeLabel(_ title: String, progress: (Int?, Int?), tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+            Text(title.uppercased()).font(.sora(.caption2, .semibold)).foregroundStyle(.secondary)
             if let lo = progress.0, let hi = progress.1 {
-                Text("\(Pitch.noteName(Double(lo))) – \(Pitch.noteName(Double(hi)))").font(.title3.weight(.semibold)).foregroundStyle(tint)
-                Text("\(hi - lo) semitones").font(.caption).foregroundStyle(.secondary)
+                Text("\(Pitch.noteName(Double(lo))) – \(Pitch.noteName(Double(hi)))").font(.display(.title3)).foregroundStyle(tint)
+                Text("\(hi - lo) semitones").font(.sora(.caption)).foregroundStyle(.secondary)
             } else {
-                Text("—").font(.title3.weight(.semibold)).foregroundStyle(.secondary)
-                Text("Sing to find out").font(.caption).foregroundStyle(.secondary)
+                Text("—").font(.display(.title3)).foregroundStyle(.secondary)
+                Text("Sing to find out").font(.sora(.caption)).foregroundStyle(.secondary)
             }
         }
     }
 
     private var practiceCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Practice").font(.headline)
+            Text("Practice").font(.sora(.headline, .semibold))
             HStack {
                 StatTile(label: "Time listened", value: Formatting.minutes(progress.history.seconds))
                 StatTile(label: "Sessions", value: "\(progress.history.sessions)")
@@ -102,14 +102,14 @@ struct ProgressTabView: View {
     private var questCard: some View {
         let q = progress.history.quest
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Pitch Quest bests").font(.headline)
+            Text("Pitch Quest bests").font(.sora(.headline, .semibold))
             HStack {
                 StatTile(label: "Runs", value: "\(q.runs)")
                 StatTile(label: "Most matched", value: "\(q.mostMatched)")
                 StatTile(label: "Quickest avg", value: q.quickestAverage.map { String(format: "%.1f", $0) } ?? "—", unit: "s")
             }
             if let lo = q.widestLow, let hi = q.widestHigh {
-                Text("Widest quest: \(Pitch.noteName(Double(lo))) to \(Pitch.noteName(Double(hi))) (\(hi - lo) semitones)").font(.footnote).foregroundStyle(.secondary)
+                Text("Widest quest: \(Pitch.noteName(Double(lo))) to \(Pitch.noteName(Double(hi))) (\(hi - lo) semitones)").font(.sora(.footnote)).foregroundStyle(.secondary)
             }
         }
         .card()
@@ -117,7 +117,7 @@ struct ProgressTabView: View {
 
     private var shareCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Share your range").font(.headline)
+            Text("Share your range").font(.sora(.headline, .semibold))
             RangeShareCard(low: progress.history.low, high: progress.history.high, streak: progress.streak)
                 .frame(height: 170)
             if let image = shareImage {
@@ -186,14 +186,14 @@ struct RangeShareCard: View {
         ZStack {
             LinearGradient(colors: [Color(red: 0.16, green: 0.09, blue: 0.32), Color(red: 0.44, green: 0.28, blue: 0.78)], startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(alignment: .leading, spacing: 8) {
-                HStack { Image(systemName: "waveform"); Text("Singwell").font(.headline) }.foregroundStyle(.white.opacity(0.85))
+                HStack { Image(systemName: "waveform"); Text("Singwell").font(.sora(.headline, .semibold)) }.foregroundStyle(.white.opacity(0.85))
                 Spacer()
-                Text("My observed range").font(.caption.weight(.semibold)).foregroundStyle(.white.opacity(0.7))
+                Text("My observed range").font(.sora(.caption, .semibold)).foregroundStyle(.white.opacity(0.7))
                 if let low, let high {
-                    Text("\(Pitch.noteName(Double(low))) – \(Pitch.noteName(Double(high)))").font(.system(size: 44, weight: .bold, design: .rounded)).foregroundStyle(.white)
-                    Text("\(high - low) semitones · \(streak) day streak").font(.subheadline).foregroundStyle(.white.opacity(0.85))
+                    Text("\(Pitch.noteName(Double(low))) – \(Pitch.noteName(Double(high)))").font(.display(size: 44)).foregroundStyle(.white)
+                    Text("\(high - low) semitones · \(streak) day streak").font(.sora(.subheadline)).foregroundStyle(.white.opacity(0.85))
                 } else {
-                    Text("Still mapping").font(.system(size: 36, weight: .bold, design: .rounded)).foregroundStyle(.white)
+                    Text("Still mapping").font(.display(size: 36)).foregroundStyle(.white)
                 }
             }
             .padding(22)

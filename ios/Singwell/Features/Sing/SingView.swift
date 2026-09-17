@@ -31,7 +31,7 @@ struct SingView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     HStack(spacing: 6) {
                         if session.inputActive { LiveDot(color: session.recording ? .red : .singGreen) }
-                        Text(statusLabel).font(.caption.weight(.semibold)).foregroundStyle(.secondary).lineLimit(1).fixedSize()
+                        Text(statusLabel).font(.sora(.caption, .semibold)).foregroundStyle(.secondary).lineLimit(1).fixedSize()
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {

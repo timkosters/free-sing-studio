@@ -29,8 +29,8 @@ struct LibraryView: View {
                             Section {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("\(library.takes.count) of \(Entitlements.freeTakeLimit) free takes used").font(.subheadline.weight(.semibold))
-                                        Text("Pro keeps every recording.").font(.caption).foregroundStyle(.secondary)
+                                        Text("\(library.takes.count) of \(Entitlements.freeTakeLimit) free takes used").font(.sora(.subheadline, .semibold))
+                                        Text("Pro keeps every recording.").font(.sora(.caption)).foregroundStyle(.secondary)
                                     }
                                     Spacer()
                                     Button("Go Pro") { showPaywall = true }.buttonStyle(.borderedProminent).tint(.voice).controlSize(.small)
@@ -77,21 +77,21 @@ struct TakeRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: take.context.symbol)
-                .font(.title3)
+                .font(.display(.title3))
                 .foregroundStyle(Color.voice)
                 .frame(width: 34, height: 34)
                 .background(Color.voice.opacity(0.12), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
-                Text(take.title).font(.body.weight(.medium)).lineLimit(1)
+                Text(take.title).font(.sora(.body, .medium)).lineLimit(1)
                 HStack(spacing: 6) {
                     Text(Formatting.clock(take.duration)).monospacedDigit()
                     if let r = take.observedRange { Text("· \(Pitch.noteName(Double(r.low)))–\(Pitch.noteName(Double(r.high)))") }
                     Text("· \(take.createdAt.formatted(.relative(presentation: .named)))")
                 }
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.sora(.caption)).foregroundStyle(.secondary)
             }
             Spacer()
-            if take.favorite { Image(systemName: "star.fill").foregroundStyle(.yellow).font(.caption) }
+            if take.favorite { Image(systemName: "star.fill").foregroundStyle(.yellow).font(.sora(.caption)) }
         }
     }
 }
@@ -123,18 +123,18 @@ struct TakeDetailView: View {
                     Text(Formatting.clock(player.currentTime)).monospacedDigit()
                     Spacer()
                     Text(Formatting.clock(player.duration)).monospacedDigit()
-                }.font(.caption).foregroundStyle(.secondary)
+                }.font(.sora(.caption)).foregroundStyle(.secondary)
             }
             HStack(spacing: 16) {
-                Button { player.seek(to: max(0, player.currentTime - 5)) } label: { Image(systemName: "gobackward.5").font(.title2) }
+                Button { player.seek(to: max(0, player.currentTime - 5)) } label: { Image(systemName: "gobackward.5").font(.display(.title2)) }
                 Button { player.toggle() } label: {
                     Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 56))
                 }.tint(.voice)
-                Button { player.seek(to: min(player.duration, player.currentTime + 5)) } label: { Image(systemName: "goforward.5").font(.title2) }
+                Button { player.seek(to: min(player.duration, player.currentTime + 5)) } label: { Image(systemName: "goforward.5").font(.display(.title2)) }
             }
             if let r = current.observedRange {
                 Text("Notes reached: \(Pitch.noteName(Double(r.low))) to \(Pitch.noteName(Double(r.high))) · \(Formatting.rangeSpan(r.low, r.high) ?? 0) semitones")
-                    .font(.footnote).foregroundStyle(.secondary)
+                    .font(.sora(.footnote)).foregroundStyle(.secondary)
             }
         }
         .padding(16)

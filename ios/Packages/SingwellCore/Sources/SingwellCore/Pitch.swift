@@ -39,8 +39,33 @@ public enum Pitch {
         }
     }
 
+    /// Lowest fundamental treated as a voice: just under A1. Below is rumble, not singing.
+    public static let minHz = 54.0
+    /// Highest fundamental treated as a voice, comfortably above any sung note.
+    public static let maxHz = 2200.0
+
+    /// Flatten a slow amplitude envelope while leaving the pitch periodicity alone.
+    /// A lip trill flutters loudness at roughly 20–35 Hz; on low notes that flutter beats the
+    /// vocal period and YIN reports a note two octaves down. Dividing by a short running
+    /// magnitude equalises loudness so only the vocal period is left. Vibrato passes through.
+    static func flattenEnvelope(_ buffer: [Float], sampleRate: Double) -> [Float] {
+        let window = max(8, Int(sampleRate / 500))
+        var magnitude = [Float](repeating: 0, count: buffer.count)
+        var sum: Float = 0
+        for i in buffer.indices {
+            sum += abs(buffer[i])
+            if i >= window { sum -= abs(buffer[i - window]) }
+            magnitude[i] = sum / Float(min(i + 1, window))
+        }
+        let peak = magnitude.max() ?? 0
+        let floor = peak * 0.15
+        var out = [Float](repeating: 0, count: buffer.count)
+        for i in buffer.indices { out[i] = buffer[i] / max(magnitude[i], floor) }
+        return out
+    }
+
     /// YIN with cumulative mean normalisation and parabolic interpolation.
-    /// Returns nil for silence, noise, or anything outside 30–2200 Hz.
+    /// Returns nil for silence, noise, or anything outside the voice band.
     public static func detect(_ input: [Float], sampleRate inputRate: Double) -> Detection? {
         guard inputRate.isFinite, inputRate > 0, input.count >= 1024 else { return nil }
         var buffer = input
@@ -64,10 +89,12 @@ public enum Pitch {
         mean /= Double(count)
         var power: Double = 0
         for v in buffer { let d = Double(v) - mean; power += d * d }
+        // Judge silence on the original signal: flattening normalises loudness away.
         if (power / Double(count)).squareRoot() < 0.008 { return nil }
+        buffer = flattenEnvelope(buffer, sampleRate: sampleRate)
 
-        let maxLag = min(Int(sampleRate / 30), count / 2 - 1)
-        let minLag = max(2, Int(sampleRate / 2200))
+        let maxLag = min(Int(sampleRate / minHz), count / 2 - 1)
+        let minLag = max(2, Int(sampleRate / maxHz))
         guard maxLag > minLag + 1 else { return nil }
         let size = count - maxLag
         var diff = [Double](repeating: 1, count: maxLag + 1)
@@ -98,7 +125,7 @@ public enum Pitch {
         let den = a - 2 * b + c
         let refined = Double(lag) + (den == 0 ? 0 : (a - c) / (2 * den))
         let frequency = sampleRate / refined
-        guard frequency >= 30, frequency <= 2200 else { return nil }
+        guard frequency >= minHz, frequency <= maxHz else { return nil }
         return Detection(frequency: frequency, confidence: 1 - b)
     }
 

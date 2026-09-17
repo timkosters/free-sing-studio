@@ -51,7 +51,7 @@ public enum Daily {
         public var lengthLabel: String { "\(Int((seconds / 60).rounded())) min" }
     }
 
-    // MARK: Step library
+    // MARK: Step library (kept word-for-word in sync with the web app's lib/daily.ts)
 
     static let wake = Step(id: "wake", title: "Wake the body up",
         cue: "Loosen the jaw, face and shoulders before any sound.",
@@ -59,16 +59,16 @@ public enum Daily {
                  "Roll the shoulders back and drop them. Knees loose, not locked.",
                  "Smile wide, then pucker. Repeat. Tongue side to side.",
                  "Chin level. Feet apart, weight even, chest high."],
-        why: "Tension in the jaw and shoulders shows up in the voice first.",
+        why: "Tension in the jaw and shoulders shows up in the sound",
         seconds: 90, engine: .none)
 
     static let belly = Step(id: "belly", title: "Belly breath",
-        cue: "Inhale low into the stomach. Chest stays still.",
+        cue: "Sharp inhale into the stomach. Chest stays still.",
         detail: ["Hand on the belly, hand on the chest. Only the lower hand moves.",
-                 "Inhale, feel the expansion, then count out loud to 15 on the exhale.",
+                 "Sharp inhale, hold the expansion, then count out loud to 15.",
                  "Take a small top-up breath between each number.",
                  "Neck and throat stay free the whole time."],
-        why: "Low breathing gives you support; chest breathing tightens the neck.",
+        why: "Breathing into the chest is what tightens the throat",
         seconds: 150, engine: .breath, breath: (3, 2, 9))
 
     static let ladder = Step(id: "ladder", title: "Breath control ladder",
@@ -77,16 +77,16 @@ public enum Daily {
                  "Then the ratios: in 3 out 9, in 4 out 12, in 5 out 15, in 6 out 18.",
                  "The stream stays even. No collapse at the end.",
                  "Finish on a humming glide, low to high and back."],
-        why: "Long, even exhales are what let a phrase stay steady to the last note.",
+        why: "Steady air is what keeps a long phrase supported",
         seconds: 150, engine: .none)
 
     static let twisters = Step(id: "twisters", title: "Diction",
-        cue: "Over-articulate every consonant, then relax and keep the clarity.",
+        cue: "Straw between the teeth. Over-articulate, then drop the straw.",
         detail: ["Peter Piper picked a peck of pickled peppers.",
                  "Betty Botter bought some butter, but she said the butter's bitter.",
                  "How much wood would a woodchuck chuck.",
-                 "Last round at speed: fast and clear."],
-        why: "Clear consonants carry a lyric, especially on a microphone.",
+                 "Last round with nothing in your mouth: fast and clear."],
+        why: "Consonants are the first thing a microphone loses",
         seconds: 90, engine: .none)
 
     static let siren = Step(id: "siren", title: "Lip trill siren",
@@ -95,16 +95,16 @@ public enum Daily {
                  "Slide up through your whole range and back down. Four passes.",
                  "Do not stop or push at the break. Glide straight through it.",
                  "Watch the trail: you want one smooth line, not a step."],
-        why: "The gentlest way to warm the whole range and find where it sits today.",
+        why: "Warms the voice and crosses the break without strain",
         seconds: 90, engine: .mic)
 
-    static let goo = Step(id: "goo", title: "\"Goo\" on a descending run",
-        cue: "\"Goo\" down five notes, then start a semitone higher.",
-        detail: ["The hard \"g\" brings the vocal folds together cleanly. That is the point.",
+    static let goo = Step(id: "goo", title: "\"Goo\": close the cords",
+        cue: "The main event. \"Goo\" on a descending five-note run, up a semitone each time.",
+        detail: ["The hard \"g\" snaps the cords together. That is the point.",
                  "Sing goo-oo-oo-oo-oo down 5-4-3-2-1, then start a semitone higher.",
                  "Aim for a clean, buzzy tone. No air leaking around the note.",
                  "If it turns breathy, come back down and restart lower."],
-        why: "Breathy tone usually means the folds are not closing fully. This fixes it.",
+        why: "A breathy tone usually means the cords are not quite meeting",
         seconds: 180, engine: .mic)
 
     static let oo = Step(id: "oo", title: "Sustained \"oo\"",
@@ -113,56 +113,56 @@ public enum Daily {
                  "No wobble, no fade, no breath escaping. Straight line.",
                  "Rest, then repeat a tone higher.",
                  "The meter shows how steady you actually are."],
-        why: "Steadiness on one note is the foundation for steadiness in a phrase.",
+        why: "A held note is where wobble and escaping air become obvious",
         seconds: 120, engine: .hold, hold: 60)
 
     static let bridge = Step(id: "bridge", title: "The bridge: chest into head",
-        cue: "Glide across your break on \"ng\" or \"oo\". Glide in. Never jump.",
-        detail: ["Start below the break in chest voice, slide up through it, keep going into head voice.",
+        cue: "Slide up through the place your voice wants to flip. Glide. Never jump.",
+        detail: ["Find your break first: siren slowly until the tone wants to change gear.",
+                 "Start below it in chest, slide up through it, keep going into head voice.",
                  "Mouth stays open. Do not brace or anticipate the note before it arrives.",
-                 "If it cracks, go slower and quieter, not louder.",
-                 "Then reverse: start in head voice and slide down through the break."],
-        why: "Most singers' weakest spot is the transition between registers. Work it daily.",
+                 "If it cracks, go slower and quieter, not louder. Then slide back down."],
+        why: "The gap between chest and head voice is the slowest thing to build",
         seconds: 180, engine: .mic)
 
-    static let passage = Step(id: "passage", title: "Your hard line",
-        cue: "Pick one phrase from a song that sits on your break. Loop it.",
-        detail: ["Choose a line that always feels shaky. That is why it is here.",
-                 "Head voice on the climb, stay relaxed, keep it quiet.",
-                 "Head neutral. Do not crane upward. Move side to side instead.",
+    static let hardLine = Step(id: "hard-line", title: "Your hardest line",
+        cue: "One phrase. The one that keeps going wrong. On loop.",
+        detail: ["Pick the bar that defeats you, usually the one sitting on your break.",
+                 "Take it quieter and slower than feels right. Louder never fixes a break.",
+                 "Head neutral. Do not crane upward for the high note; move side to side.",
                  "Lead the sound forward. Do not land heavily on each syllable."],
-        why: "Isolating the hard phrase beats running the whole song.",
+        why: "One hard bar, repeated, beats another run at the whole song",
         seconds: 180, engine: .mic)
 
-    static let lows = Step(id: "lows", title: "Low notes forward",
-        cue: "\"Noi\" on a descending run into your low range. Bring it forward.",
-        detail: ["Sing \"noi\" and step down toward the bottom of your range.",
+    static let noi = Step(id: "noi", title: "Low notes forward: \"noi\"",
+        cue: "Down into your low range. Bring it forward. Do not swallow it.",
+        detail: ["Sing \"noi\" on a descending run into your low range.",
                  "Keep the sound at the front of the face, not in the throat.",
                  "A gentle yawn shape before you start opens the space.",
-                 "Stop where the tone thins out. That edge moves over weeks."],
-        why: "Low notes disappear when they get swallowed. Forward placement keeps them audible.",
+                 "Go one semitone lower than you think you have. It is usually there."],
+        why: "Low notes get swallowed long before they actually run out",
         seconds: 90, engine: .mic)
 
     static let song = Step(id: "song", title: "Song of the day",
         cue: "One section. Not the whole song.",
-        detail: ["Pick a song you are working on.",
+        detail: ["Whatever you are working on. One song, not a playlist.",
                  "Take one or two lines. Belly breath before each phrase.",
                  "Repeat the section rather than running the whole thing.",
                  "Record a take. In a few weeks you get to compare honestly."],
-        why: "Practice transfers to songs only when you rehearse songs in small pieces.",
+        why: "Sections build a song; run-throughs rehearse the mistakes",
         seconds: 240, engine: .mic)
 
     // MARK: Routines
 
     public static let routines: [Routine] = [
-        Routine(id: .quick, label: "Quick", blurb: "The irreducible ten minutes. Breath, folds, bridge.",
-                steps: [wake.lasting(60), belly.lasting(120), siren.lasting(60), goo.lasting(120), bridge.lasting(120), song.lasting(120)]),
-        Routine(id: .full, label: "Full", blurb: "The complete routine, in order.",
+        Routine(id: .quick, label: "Quick", blurb: "The irreducible ten minutes. Breath, cords, bridge.",
+                steps: [wake.lasting(60), belly.lasting(120), siren.lasting(60), goo.lasting(150), bridge.lasting(120), song.lasting(120)]),
+        Routine(id: .full, label: "Full", blurb: "Everything, in the order a lesson runs it.",
                 steps: [wake.lasting(60), belly.lasting(120), ladder.lasting(120), twisters.lasting(60), siren.lasting(60),
-                        goo.lasting(150), oo.lasting(90), bridge.lasting(150), passage.lasting(120), lows.lasting(90), song.lasting(150)]),
+                        goo.lasting(150), oo.lasting(90), bridge.lasting(150), hardLine.lasting(120), noi.lasting(90), song.lasting(150)]),
         Routine(id: .bridge, label: "Bridge focus", blurb: "All in on the chest-to-head transition.",
                 steps: [wake.lasting(60), belly.lasting(90), siren.lasting(60), goo.lasting(120), bridge.lasting(180),
-                        passage.lasting(150), oo.lasting(90), bridge.lasting(120)]),
+                        hardLine.lasting(150), oo.lasting(90), bridge.lasting(120)]),
     ]
 
     public static func routine(_ id: RoutineID) -> Routine {
